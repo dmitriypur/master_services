@@ -33,7 +33,7 @@ jobs:
       - name: Deploy code with rsync
         uses: burnett01/rsync-deployments@7.1.0
         with:
-          switches: -avz --delete --exclude='.git' --exclude='node_modules' --exclude='tests' --exclude='.github' --exclude='docker' --exclude='Dockerfile'
+          switches: -avz --delete --exclude='.env' --exclude='.env.*' --exclude='.git' --exclude='node_modules' --exclude='tests' --exclude='.github' --exclude='docker' --exclude='Dockerfile'
           path: .
           remote_path: ${{ secrets.APP_DIR }}
           remote_host: ${{ secrets.SSH_HOST }}
