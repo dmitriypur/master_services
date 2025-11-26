@@ -17,7 +17,7 @@ class CalendarController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return view('master_calendar_webview', [
+            return Inertia::render('Master/CalendarWebView', [
                 'user' => Auth::user(),
             ]);
         }

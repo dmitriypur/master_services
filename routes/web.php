@@ -10,10 +10,11 @@ use App\Http\Controllers\Master\SettingsController;
 use App\Http\Controllers\Telegram\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return Inertia::render('Home');
 });
 
 Route::middleware('guest')->group(function () {
@@ -34,7 +35,7 @@ Route::get('/app', function () {
         return redirect($has ? '/master/calendar' : '/master/settings');
     }
 
-    return view('webapp');
+    return Inertia::render('Auth/TelegramWebApp');
 });
 
 Route::post('/auth/telegram/webapp', [AuthTelegramController::class, 'store'])

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\Master\AppointmentController;
 use App\Http\Controllers\Api\Master\AppointmentNotificationController;
+use App\Http\Controllers\Api\Master\AppointmentCancelController;
 use App\Http\Controllers\Api\Master\MasterSearchController;
 use App\Http\Controllers\Api\Master\MasterSlotController;
 use App\Http\Controllers\Api\ServiceController;
@@ -21,6 +22,7 @@ Route::get('/masters', [MasterSearchController::class, 'index']);
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/appointments', [AppointmentController::class, 'store']);
     Route::post('/appointments/{appointment}/notify', [AppointmentNotificationController::class, 'notify'])->whereNumber('appointment');
+    Route::post('/appointments/{appointment}/cancel', [AppointmentCancelController::class, 'cancel'])->whereNumber('appointment');
     Route::get('/clients', [ClientController::class, 'index']);
     Route::post('/clients', [ClientController::class, 'store']);
     Route::get('/clients/{client}', [ClientController::class, 'show'])->whereNumber('client');

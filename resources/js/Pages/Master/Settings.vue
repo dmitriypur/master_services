@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto py-8 px-4">
+  <div class="max-w-2xl mx-auto py-4">
     <div class="mb-4 flex items-center gap-3">
       <Link href="/master/calendar" class="inline-flex items-center rounded bg-gray-900 text-white px-3 py-1.5">Календарь</Link>
       <span class="text-gray-500 text-sm">Настройки</span>

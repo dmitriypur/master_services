@@ -33,7 +33,7 @@ jobs:
       - name: Deploy code with rsync
         uses: burnett01/rsync-deployments@7.1.0
         with:
-          switches: -avz --delete --exclude='.env' --exclude='.env.*' --exclude='.git' --exclude='node_modules' --exclude='tests' --exclude='.github' --exclude='docker' --exclude='Dockerfile'
+          switches: -avz --delete --exclude='.env' --exclude='.env.*' --exclude='.git' --exclude='node_modules' --exclude='tests' --exclude='.github' --exclude='docker' --exclude='Dockerfile' --exclude='public/vendor' --exclude='public/storage' --exclude='storage'
           path: .
           remote_path: ${{ secrets.APP_DIR }}
           remote_host: ${{ secrets.SSH_HOST }}
@@ -69,6 +69,7 @@ jobs:
               php -v
               export COMPOSER_ALLOW_SUPERUSER=1
               composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+              php artisan livewire:publish --assets --force || true
               php artisan key:generate || true
               php artisan migrate --force || true
               php artisan config:cache || true

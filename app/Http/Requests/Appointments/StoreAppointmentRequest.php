@@ -25,7 +25,7 @@ class StoreAppointmentRequest extends FormRequest
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
             'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')],
             'client_name' => ['required_without:client_id', 'string', 'max:255'],
-            'client_phone' => ['required_without:client_id', 'string', 'max:255'],
+            'client_phone' => ['required_without:client_id', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'preferred_channels' => ['nullable', 'array'],
             'preferred_channels.*' => ['string', Rule::in(['phone', 'telegram', 'whatsapp'])],
             'master_id' => array_filter([
@@ -51,6 +51,9 @@ class StoreAppointmentRequest extends FormRequest
             'client_id.exists' => 'Клиент не найден',
             'client_name.required_without' => 'Укажите имя клиента',
             'client_phone.required_without' => 'Укажите телефон клиента',
+            'client_phone.min' => 'Телефон: минимум 5 цифр',
+            'client_phone.max' => 'Телефон: максимум 11 цифр',
+            'client_phone.regex' => 'Телефон должен содержать только цифры',
             'preferred_channels.array' => 'Неверный формат каналов связи',
             'preferred_channels.*.in' => 'Недопустимый канал связи',
             'master_id.required' => 'Мастер не определён',
