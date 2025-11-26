@@ -31,7 +31,7 @@ jobs:
         run: npm run build
 
       - name: Deploy code with rsync
-        uses: burnett01/rsync-deployments@6.0.0
+        uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -avz --delete --exclude='.git' --exclude='node_modules' --exclude='tests' --exclude='.github' --exclude='docker' --exclude='Dockerfile'
           path: .
@@ -39,7 +39,7 @@ jobs:
           remote_host: ${{ secrets.SSH_HOST }}
           remote_user: ${{ secrets.SSH_USER }}
           remote_key: ${{ secrets.SSH_KEY }}
-          remote_port: ${{ secrets.SSH_PORT }}
+          rsh: ssh -p ${{ secrets.SSH_PORT }}
 
       - name: Post-deploy SSH commands
         uses: appleboy/ssh-action@v0.1.10
