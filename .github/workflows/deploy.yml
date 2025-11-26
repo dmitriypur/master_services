@@ -20,7 +20,12 @@ jobs:
           cache: 'npm'
 
       - name: Install frontend deps
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
 
       - name: Build assets
         run: npm run build
