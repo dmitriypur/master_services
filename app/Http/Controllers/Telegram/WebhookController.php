@@ -31,10 +31,6 @@ class WebhookController extends Controller
                                 'text' => 'Открыть в Telegram',
                                 'web_app' => ['url' => $url],
                             ],
-                            [
-                                'text' => 'Открыть в браузере',
-                                'url' => $url,
-                            ],
                         ],
                     ],
                 ],
