@@ -58,7 +58,10 @@ class SlotService
 
         $busy = [];
         foreach ($appointments as $a) {
-            $busy[] = [Carbon::parse($a->starts_at), Carbon::parse($a->ends_at)];
+            $busy[] = [
+                Carbon::parse((string) $a->starts_at)->timezone($tz),
+                Carbon::parse((string) $a->ends_at)->timezone($tz),
+            ];
         }
 
         $slots = [];
