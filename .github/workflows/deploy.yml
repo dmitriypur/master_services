@@ -80,3 +80,4 @@ jobs:
               sudo supervisorctl status services-worker || true
               sudo supervisorctl restart services-worker || true
             fi
+
