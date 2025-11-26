@@ -23,7 +23,12 @@ class StoreAppointmentRequest extends FormRequest
             'date' => ['required', 'date_format:Y-m-d'],
             'time' => ['required', 'date_format:H:i'],
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
-            'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')],
+            'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')->where(function ($q) {
+                $userId = $this->user()?->id;
+                if ($userId) {
+                    $q->where('user_id', $userId);
+                }
+            })],
             'client_name' => ['required_without:client_id', 'string', 'max:255'],
             'client_phone' => ['required_without:client_id', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'preferred_channels' => ['nullable', 'array'],

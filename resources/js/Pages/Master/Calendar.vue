@@ -1,13 +1,11 @@
 <template>
   <div class="max-w-3xl mx-auto py-4">
     <div class="mb-4 flex items-center gap-3">
-      <Link href="/master/settings" class="inline-flex items-center rounded bg-gray-900 text-white px-3 py-1.5">Настройки</Link>
+      <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Настройки</Link>
       <span class="text-gray-500 text-sm">Календарь</span>
     </div>
-    <h1 class="text-2xl font-semibold mb-6">Календарь мастера</h1>
 
     <div class="mb-6">
-      <label class="block text-sm font-medium mb-2">Дата</label>
       <VueDatePicker
         v-model="selectedDate"
          class="booking-picker"
@@ -35,7 +33,7 @@
           <div
             v-for="s in slots"
             :key="s.starts_at"
-            class="border rounded-lg p-3 flex flex-col gap-2 cursor-pointer"
+            class="border border-gray-300 rounded-lg p-3 flex flex-col gap-2 cursor-pointer"
             @click="s.available ? openCreateModal(s) : openInfoModal(s)"
           >
             <div class="font-mono text-sm">{{ s.time }}</div>
@@ -90,8 +88,8 @@
           <div v-if="errorMessage" class="text-red-600 text-sm">{{ errorMessage }}</div>
 
           <div class="flex items-center justify-end gap-3">
-            <Button variant="outline" type="button" @click="closeModal">Отмена</Button>
-            <Button type="submit">Создать</Button>
+            <Button class="bg-red-700" type="button" @click="closeModal">Отмена</Button>
+            <Button class="bg-indigo-700" type="submit">Создать</Button>
           </div>
       </form>
     </Modal>
@@ -103,12 +101,10 @@
           <a :href="'tel:' + info.client?.phone" class="block">Клиент: <span class="font-medium">{{ info.client?.name }}</span> <span class="text-gray-600">{{ info.client?.phone }}</span></a>
           <div>Услуга: <span class="font-medium">{{ info.service?.name }}</span></div>
         </div>
-        <div class="flex items-center justify-between mt-4">
-          <Button variant="outline" type="button" @click="closeInfo">Закрыть</Button>
-          <div class="flex items-center gap-3">
-            <Button type="button" @click="notifyClient">Напомнить клиенту</Button>
-            <Button variant="secondary" type="button" @click="cancelAppointment">Удалить</Button>
-          </div>
+        <div class="flex flex-wrap gap-2 items-center justify-between mt-4">
+          <Button class="bg-red-700" type="button" @click="closeInfo">Закрыть</Button>
+          <Button class="bg-green-700" type="button" @click="notifyClient">Напомнить клиенту</Button>
+          <Button class="bg-indigo-600" type="button" @click="cancelAppointment">Удалить</Button>
         </div>
     </Modal>
   </div>
