@@ -46,18 +46,32 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd "${APP_DIR:-${{ secrets.APP_DIR }}}"
-            php -v
-            composer install --no-dev --prefer-dist --optimize-autoloader
-            php artisan key:generate || true
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            chown -R www-data:www-data storage bootstrap/cache || true
-            chmod -R ug+rw storage bootstrap/cache || true
+            APP_DIR="${APP_DIR:-${{ secrets.APP_DIR }}}"
+            sudo mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            # Если проекта нет (artisan отсутствует), пропускаем Laravel-команды
+            if [ -f artisan ]; then
+              php -v
+              composer install --no-dev --prefer-dist --optimize-autoloader
+              php artisan key:generate || true
+              php artisan migrate --force || true
+              php artisan config:cache || true
+              php artisan route:cache || true
+              php artisan view:cache || true
+              if [ -d storage ] && [ -d bootstrap/cache ]; then
+                sudo chown -R www-data:www-data storage bootstrap/cache || true
+                sudo chmod -R ug+rw storage bootstrap/cache || true
+              fi
+            else
+              echo "artisan не найден в $APP_DIR — пропускаем Laravel-команды"
+            fi
+            # Перезагрузки сервисов безопасно
             sudo systemctl reload php8.3-fpm || true
             sudo systemctl reload nginx || true
-            sudo supervisorctl reread || true
-            sudo supervisorctl update || true
-            sudo supervisorctl restart all || true
+            if command -v supervisorctl >/dev/null 2>&1; then
+              sudo supervisorctl reread || true
+              sudo supervisorctl update || true
+              # Перезапускаем только группу воркера, если она есть
+              sudo supervisorctl status services-worker || true
+              sudo supervisorctl restart services-worker || true
+            fi
