@@ -72,9 +72,9 @@ async function tryAuth() {
     try {
       const data = await res.json()
       if (res.status === 403) {
-        choiceVisible.value = true
-        registerUrl.value = data?.register_url || '/master/register'
-        msg = 'Выберите роль'
+        const url = data?.register_url || '/master/register'
+        window.location.href = url
+        return
       } else {
         msg = data.message || msg
       }
