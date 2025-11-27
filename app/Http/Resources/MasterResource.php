@@ -13,6 +13,7 @@ class MasterResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'phone' => $this->phone,
             'city' => $this->when($this->relationLoaded('city') && $this->city !== null, function () {
                 return [
                     'id' => $this->city->id,

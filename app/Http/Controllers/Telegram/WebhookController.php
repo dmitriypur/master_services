@@ -9,6 +9,8 @@ use App\Http\Requests\TelegramWebhookRequest;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use App\Models\User;
 
 class WebhookController extends Controller
 {
@@ -18,21 +20,58 @@ class WebhookController extends Controller
         $message = $update['message'] ?? [];
         $text = (string) Arr::get($message, 'text', '');
         $chatId = (int) Arr::get($message, 'chat.id', 0);
+        $contact = $message['contact'] ?? null;
+
+        // Сохранение телефона из контакта
+        if ($chatId !== 0 && is_array($contact)) {
+            $phone = (string) Arr::get($contact, 'phone_number', '');
+            $digits = preg_replace('/\D+/', '', $phone) ?? '';
+            if ($digits !== '') {
+                Cache::put('tg:contact:'.$chatId, $digits, now()->addDays(30));
+                // Если уже есть мастер с таким telegram_id — обновим телефон
+                User::query()
+                    ->where('telegram_id', $chatId)
+                    ->where('role', 'master')
+                    ->update(['phone' => $digits]);
+            }
+        }
 
         if ($chatId !== 0 && $text === '/start') {
-            $bot->sendMessage($chatId, 'Привет! Добро пожаловать.');
+            $bot->sendMessage($chatId, 'Привет! Выберите раздел.');
 
-            $url = rtrim((string) config('app.url'), '/').'/app?role=master&ngrok-skip-browser-warning=true&_ngrok_skip_browser_warning=1';
+            $base = rtrim((string) config('app.url'), '/');
+            $masterUrl = $base.'/master/register?webview=1';
+            $clientUrl = $base.'/book?webview=1';
             $bot->sendMessage($chatId, 'Открыть приложение', [
                 'reply_markup' => [
                     'inline_keyboard' => [
                         [
                             [
-                                'text' => 'Открыть в Telegram',
-                                'web_app' => ['url' => $url],
+                                'text' => 'Для мастера',
+                                'web_app' => ['url' => $masterUrl],
+                            ],
+                            [
+                                'text' => 'Для клиента',
+                                'web_app' => ['url' => $clientUrl],
                             ],
                         ],
                     ],
+                ],
+            ]);
+
+            // Кнопка запроса контакта для автоподстановки телефона
+            $bot->sendMessage($chatId, 'Поделитесь контактом, чтобы мы сохранили ваш телефон', [
+                'reply_markup' => [
+                    'keyboard' => [
+                        [
+                            [
+                                'text' => 'Отправить контакт',
+                                'request_contact' => true,
+                            ],
+                        ],
+                    ],
+                    'resize_keyboard' => true,
+                    'one_time_keyboard' => true,
                 ],
             ]);
         }

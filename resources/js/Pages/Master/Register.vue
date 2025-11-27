@@ -14,6 +14,10 @@
         </select>
       </div>
       <div>
+        <label class="block text-sm font-medium">Телефон</label>
+        <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="mt-1 w-full border rounded p-2" placeholder="Телефон (только цифры)" />
+      </div>
+      <div>
         <label class="block text-sm font-medium">Услуги</label>
         <div class="mt-2 grid grid-cols-1 gap-2">
           <label v-for="s in services" :key="s.id" class="inline-flex items-center gap-2">
@@ -33,7 +37,7 @@
 import { ref, onMounted } from 'vue'
 
 const props = defineProps({ cities: Array, services: Array })
-const form = ref({ name: '', city_id: null, services: [] })
+const form = ref({ name: '', city_id: null, services: [], phone: '' })
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
@@ -77,11 +81,21 @@ async function submit() {
 onMounted(async () => {
   const ok = await injectTelegram()
   try {
-    if (ok) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); initData.value = window.Telegram.WebApp.initData || '' }
+    if (ok) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      initData.value = window.Telegram.WebApp.initData || ''
+      const u = window.Telegram.WebApp.initDataUnsafe?.user || null
+      if (u) {
+        const fn = (u.first_name || '').trim()
+        const ln = (u.last_name || '').trim()
+        const un = (u.username || '').trim()
+        form.value.name = [fn, ln].filter(Boolean).join(' ') || (un ? `@${un}` : '')
+      }
+    }
   } catch (e) { initData.value = '' }
 })
 </script>
 
 <style scoped>
 </style>
-

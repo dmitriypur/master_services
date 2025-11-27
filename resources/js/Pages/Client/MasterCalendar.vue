@@ -5,6 +5,7 @@
       <div class="font-medium">{{ masterData.name }}</div>
       <div v-if="masterData.city" class="">{{ masterData.city.name }}</div>
       <div v-if="masterData.address" class="">{{ masterData.address }}</div>
+      <div v-if="masterData.phone" class="">Телефон: {{ masterData.phone }}</div>
     </div>
 
     <div class="mb-6">

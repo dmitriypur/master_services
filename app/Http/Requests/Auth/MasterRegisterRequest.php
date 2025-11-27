@@ -21,8 +21,8 @@ class MasterRegisterRequest extends FormRequest
             'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
             'services' => ['required', 'array', 'min:1'],
             'services.*' => ['integer', Rule::exists('services', 'id')],
+            'phone' => ['nullable', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'initData' => ['required', 'string'],
         ];
     }
 }
-

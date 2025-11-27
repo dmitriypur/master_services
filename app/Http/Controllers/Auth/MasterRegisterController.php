@@ -12,6 +12,7 @@ use App\Services\Telegram\TelegramWebAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class MasterRegisterController extends Controller
 {
@@ -32,6 +33,20 @@ class MasterRegisterController extends Controller
         }
 
         $email = 'tg_' . $userData['id'] . '@local';
+        $phone = null;
+        if (! empty($payload['phone']) && is_string($payload['phone'])) {
+            $digits = preg_replace('/\\D+/', '', (string) $payload['phone']) ?? '';
+            if ($digits !== '' && strlen($digits) >= 5 && strlen($digits) <= 11) {
+                $phone = $digits;
+            }
+        }
+        if ($phone === null) {
+            $cached = (string) (Cache::get('tg:contact_'.$userData['id']) ?? Cache::get('tg:contact:'.$userData['id']) ?? '');
+            $cachedDigits = preg_replace('/\\D+/', '', $cached) ?? '';
+            if ($cachedDigits !== '' && strlen($cachedDigits) >= 5 && strlen($cachedDigits) <= 11) {
+                $phone = $cachedDigits;
+            }
+        }
         $user = User::query()->create([
             'name' => (string) $payload['name'],
             'email' => $email,
@@ -39,6 +54,7 @@ class MasterRegisterController extends Controller
             'role' => 'master',
             'telegram_id' => (int) $userData['id'],
             'city_id' => (int) $payload['city_id'],
+            'phone' => $phone,
         ]);
 
         $serviceIds = array_map('intval', (array) $payload['services']);
@@ -60,4 +76,3 @@ class MasterRegisterController extends Controller
         ]);
     }
 }
-
