@@ -4,9 +4,12 @@
       <h1 class="text-xl font-semibold">Вход через Telegram WebApp</h1>
       <p class="text-sm text-gray-600 mt-2">Авторизация без перезагрузки.</p>
       <div class="mt-4 text-sm" :class="statusClass">{{ status }}</div>
-      <div class="mt-6 flex items-center justify-between">
-        <Link href="/login" class="text-gray-600 hover:text-black">Войти иначе</Link>
+      <div class="mt-6 flex items-center justify-between" v-if="!choiceVisible">
         <button class="inline-flex items-center rounded-lg bg-black text-white px-4 py-2" @click="tryAuth">Повторить</button>
+      </div>
+      <div class="mt-6 grid grid-cols-2 gap-3" v-else>
+        <button class="inline-flex items-center justify-center rounded-lg bg-black text-white px-4 py-2" @click="goMaster">Я мастер</button>
+        <button class="inline-flex items-center justify-center rounded-lg bg-gray-900 text-white px-4 py-2" @click="goClient">Я клиент</button>
       </div>
     </div>
   </div>
@@ -14,9 +17,10 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { Link } from '@inertiajs/vue3'
 
 const status = ref('Страница загружена')
+const choiceVisible = ref(false)
+const registerUrl = ref('/master/register')
 
 const statusClass = computed(() => {
   if (status.value.startsWith('Ошибка')) return 'text-red-600'
@@ -65,7 +69,16 @@ async function tryAuth() {
   })
   if (!res.ok) {
     let msg = 'Ошибка авторизации'
-    try { const data = await res.json(); msg = data.message || msg } catch (e) {}
+    try {
+      const data = await res.json()
+      if (res.status === 403) {
+        choiceVisible.value = true
+        registerUrl.value = data?.register_url || '/master/register'
+        msg = 'Выберите роль'
+      } else {
+        msg = data.message || msg
+      }
+    } catch (e) {}
     status.value = msg
     sendStage('auth-error-' + res.status)
     return
@@ -75,6 +88,14 @@ async function tryAuth() {
   sendStage('auth-ok')
   const dest = (data && data.redirect) ? data.redirect : '/master/calendar'
   window.location.href = dest
+}
+
+function goMaster() {
+  window.location.href = registerUrl.value
+}
+
+function goClient() {
+  window.location.href = '/book?webview=1'
 }
 
 onMounted(() => { status.value = 'Страница загружена'; sendStage('loaded'); tryAuth() })
