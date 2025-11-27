@@ -20,15 +20,19 @@ class MasterRegisterController extends Controller
         $payload = $request->validated();
         $userData = $service->validateInitData((string) $request->input('initData'));
         if (empty($userData['id'])) {
-            return response()->json(['message' => 'Invalid initData'], 422);
+            return response()->json(['message' => 'Неверные данные WebApp'], 422);
         }
 
-        $exists = User::query()
+        $existing = User::query()
             ->where('telegram_id', $userData['id'])
             ->where('role', 'master')
-            ->exists();
-        if ($exists) {
-            return response()->json(['message' => 'Already registered'], 409);
+            ->first();
+        if ($existing) {
+            Auth::login($existing, true);
+            return response()->json([
+                'message' => 'Уже зарегистрированы',
+                'redirect' => url('/master/settings'),
+            ]);
         }
 
         $email = 'tg_' . $userData['id'] . '@local';
@@ -64,7 +68,7 @@ class MasterRegisterController extends Controller
         Auth::login($user, true);
 
         return response()->json([
-            'message' => 'Registered',
+            'message' => 'Успешная регистрация',
             'redirect' => url('/master/settings'),
         ]);
     }

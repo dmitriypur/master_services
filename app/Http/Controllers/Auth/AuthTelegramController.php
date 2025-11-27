@@ -24,7 +24,7 @@ class AuthTelegramController extends Controller
         if (empty($userData['id'])) {
             \Log::warning('webapp-auth-invalid-init');
 
-            return response()->json(['message' => 'Invalid initData'], 422);
+            return response()->json(['message' => 'Неверные данные WebApp'], 422);
         }
 
         $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? '')) ?: ($userData['username'] ?? ('tg_'.$userData['id']));
@@ -37,7 +37,7 @@ class AuthTelegramController extends Controller
 
         if (! $user) {
             return response()->json([
-                'message' => 'Not a master',
+                'message' => 'Требуется регистрация мастера',
                 'register_url' => url('/master/register'),
             ], 403);
         }
