@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Client\BookingController;
 use App\Http\Controllers\Client\MasterCalendarController;
+use App\Http\Controllers\Auth\MasterRegisterController;
 use App\Http\Controllers\Master\CalendarController;
 use App\Http\Controllers\Master\SettingsController;
 use App\Http\Controllers\Telegram\WebhookController;
@@ -41,6 +42,18 @@ Route::get('/app', function () {
 Route::post('/auth/telegram/webapp', [AuthTelegramController::class, 'store'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+Route::get('/master/register', function () {
+    $cities = \App\Models\City::query()->where('is_active', true)->get(['id', 'name']);
+    $services = \App\Models\Service::query()->orderBy('name')->get(['id', 'name']);
+    return Inertia::render('Master/Register', [
+        'cities' => $cities,
+        'services' => $services,
+    ]);
+})->name('master.register');
+
+Route::post('/auth/telegram/master/register', [MasterRegisterController::class, 'store'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::post('/debug/webapp-event', function (Request $request) {
     Log::info('webapp-event', [
         'stage' => $request->input('stage'),
@@ -52,6 +65,9 @@ Route::post('/debug/webapp-event', function (Request $request) {
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::middleware('auth')->group(function () {
+    Route::get('/master/clients', function () {
+        return Inertia::render('Master/Clients');
+    })->name('master.clients.index');
     Route::get('/master/settings', [SettingsController::class, 'edit'])->name('master.settings.edit');
     Route::put('/master/settings', [SettingsController::class, 'update'])->name('master.settings.update');
     Route::get('/master/calendar', [CalendarController::class, 'index'])->name('master.calendar.index');

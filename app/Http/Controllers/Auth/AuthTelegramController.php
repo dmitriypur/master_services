@@ -30,15 +30,17 @@ class AuthTelegramController extends Controller
         $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? '')) ?: ($userData['username'] ?? ('tg_'.$userData['id']));
         $email = 'tg_'.$userData['id'].'@local';
 
-        $user = User::query()->firstOrCreate(
-            ['telegram_id' => $userData['id']],
-            [
-                'name' => $name,
-                'email' => $email,
-                'password' => Str::password(16),
-                'role' => 'master',
-            ]
-        );
+        $user = User::query()
+            ->where('telegram_id', $userData['id'])
+            ->where('role', 'master')
+            ->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Not a master',
+                'register_url' => url('/master/register'),
+            ], 403);
+        }
 
         Auth::login($user, true);
         \Log::info('webapp-auth-success', ['user_id' => $user->id]);

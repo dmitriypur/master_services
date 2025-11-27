@@ -48,4 +48,12 @@ class ClientController extends Controller
 
         return new ClientResource($client);
     }
+
+    public function destroy(Client $client): JsonResource
+    {
+        abort_unless($client->user_id === Auth::id(), 404);
+        $client->delete();
+
+        return new ClientResource($client);
+    }
 }

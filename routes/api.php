@@ -27,5 +27,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/clients', [ClientController::class, 'store']);
     Route::get('/clients/{client}', [ClientController::class, 'show'])->whereNumber('client');
     Route::put('/clients/{client}', [ClientController::class, 'update'])->whereNumber('client');
+    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->whereNumber('client');
     Route::get('/appointments/at', [AppointmentController::class, 'showAt']);
 });
