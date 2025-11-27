@@ -20,6 +20,7 @@ class UpdateSettingsRequest extends FormRequest
         return [
             'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
             'address' => ['required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'work_days' => ['required', 'array', 'min:1', 'max:7'],
             'work_days.*' => ['string', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
             'work_time_from' => ['required', 'date_format:H:i', 'before:work_time_to'],
@@ -55,6 +56,7 @@ class UpdateSettingsRequest extends FormRequest
             'services.array' => 'Список услуг в неверном формате',
             'services.*.integer' => 'Неверная услуга',
             'services.*.exists' => 'Некоторая услуга не найдена',
+            'phone.regex' => 'Телефон: только цифры, 5–11',
         ];
     }
 

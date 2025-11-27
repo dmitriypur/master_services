@@ -2,6 +2,7 @@
   <div class="max-w-2xl mx-auto py-4">
     <div class="mb-4 flex items-center gap-3">
       <Link href="/master/calendar" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Календарь</Link>
+      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Клиенты</Link>
       <span class="text-gray-500 text-sm">Настройки</span>
     </div>
     <h1 class="text-2xl font-semibold mb-6">Настройки мастера</h1>
@@ -19,6 +20,12 @@
         <label class="block text-sm font-medium mb-2">Адрес</label>
         <input v-model="form.address" type="text" class="block w-full rounded border px-3 py-2" />
         <p v-if="form.errors.address" class="text-red-600 text-sm mt-1">{{ form.errors.address }}</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-2">Телефон</label>
+        <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="block w-full rounded border px-3 py-2" />
+        <p v-if="form.errors.phone" class="text-red-600 text-sm mt-1">{{ form.errors.phone }}</p>
       </div>
 
       <div>
@@ -112,6 +119,7 @@ const props = defineProps({ user: Object, cities: Array, settings: Object, servi
 const form = useForm({
   city_id: props.user?.city_id ?? null,
   address: props.settings?.address ?? '',
+  phone: props.user?.phone ?? '',
   work_days: props.settings?.work_days ?? [],
   work_time_from: props.settings?.work_time_from ?? '',
   work_time_to: props.settings?.work_time_to ?? '',

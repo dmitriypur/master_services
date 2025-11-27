@@ -39,6 +39,9 @@ class UserResource extends Resource
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true),
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Телефон')
+                            ->maxLength(32),
                         Forms\Components\TextInput::make('password')
                             ->label('Пароль')
                             ->password()
@@ -128,6 +131,9 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('role')
                     ->label('Роль')
                     ->badge(),
+                Tables\Columns\TextColumn::make('phone')
+                    ->label('Телефон')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('city.name')
                     ->label('Город')
                     ->sortable(),

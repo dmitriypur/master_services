@@ -12,7 +12,6 @@ use App\Services\Telegram\TelegramWebAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 
 class MasterRegisterController extends Controller
 {
@@ -40,13 +39,7 @@ class MasterRegisterController extends Controller
                 $phone = $digits;
             }
         }
-        if ($phone === null) {
-            $cached = (string) (Cache::get('tg:contact_'.$userData['id']) ?? Cache::get('tg:contact:'.$userData['id']) ?? '');
-            $cachedDigits = preg_replace('/\\D+/', '', $cached) ?? '';
-            if ($cachedDigits !== '' && strlen($cachedDigits) >= 5 && strlen($cachedDigits) <= 11) {
-                $phone = $cachedDigits;
-            }
-        }
+        // Телефон только вручную
         $user = User::query()->create([
             'name' => (string) $payload['name'],
             'email' => $email,

@@ -22,9 +22,7 @@ class TelegramWebhookRequest extends FormRequest
             'message.text' => ['sometimes', 'string'],
             'message.chat' => ['sometimes', 'array'],
             'message.chat.id' => ['sometimes', 'integer'],
-            'message.contact' => ['sometimes', 'array'],
-            'message.contact.phone_number' => ['sometimes', 'string'],
-            'message.contact.user_id' => ['sometimes', 'integer'],
+            // Контакт не используем
         ];
     }
 }

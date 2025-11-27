@@ -18,6 +18,14 @@ class UpdateSettingsAction
                 $user->save();
             }
 
+            if (array_key_exists('phone', $data) && is_string($data['phone'])) {
+                $digits = preg_replace('/\D+/', '', (string) $data['phone']) ?? '';
+                if ($digits !== '' && strlen($digits) >= 5 && strlen($digits) <= 11) {
+                    $user->phone = $digits;
+                    $user->save();
+                }
+            }
+
             $payload = Arr::only($data, [
                 'address',
                 'work_days',

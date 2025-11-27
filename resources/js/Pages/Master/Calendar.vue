@@ -2,6 +2,7 @@
   <div class="max-w-3xl mx-auto py-4">
     <div class="mb-4 flex items-center gap-3">
       <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Настройки</Link>
+      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Клиенты</Link>
       <span class="text-gray-500 text-sm">Календарь</span>
     </div>
 

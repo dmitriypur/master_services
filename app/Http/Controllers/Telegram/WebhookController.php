@@ -9,8 +9,6 @@ use App\Http\Requests\TelegramWebhookRequest;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
-use App\Models\User;
 
 class WebhookController extends Controller
 {
@@ -20,21 +18,7 @@ class WebhookController extends Controller
         $message = $update['message'] ?? [];
         $text = (string) Arr::get($message, 'text', '');
         $chatId = (int) Arr::get($message, 'chat.id', 0);
-        $contact = $message['contact'] ?? null;
-
-        // Сохранение телефона из контакта
-        if ($chatId !== 0 && is_array($contact)) {
-            $phone = (string) Arr::get($contact, 'phone_number', '');
-            $digits = preg_replace('/\D+/', '', $phone) ?? '';
-            if ($digits !== '') {
-                Cache::put('tg:contact:'.$chatId, $digits, now()->addDays(30));
-                // Если уже есть мастер с таким telegram_id — обновим телефон
-                User::query()
-                    ->where('telegram_id', $chatId)
-                    ->where('role', 'master')
-                    ->update(['phone' => $digits]);
-            }
-        }
+        // Контакт/телефон больше не обрабатываем — телефон вводится вручную
 
         if ($chatId !== 0 && $text === '/start') {
             $bot->sendMessage($chatId, 'Привет! Выберите раздел.');
@@ -56,22 +40,6 @@ class WebhookController extends Controller
                             ],
                         ],
                     ],
-                ],
-            ]);
-
-            // Кнопка запроса контакта для автоподстановки телефона
-            $bot->sendMessage($chatId, 'Поделитесь контактом, чтобы мы сохранили ваш телефон', [
-                'reply_markup' => [
-                    'keyboard' => [
-                        [
-                            [
-                                'text' => 'Отправить контакт',
-                                'request_contact' => true,
-                            ],
-                        ],
-                    ],
-                    'resize_keyboard' => true,
-                    'one_time_keyboard' => true,
                 ],
             ]);
         }
