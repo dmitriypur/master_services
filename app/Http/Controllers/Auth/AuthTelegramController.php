@@ -47,13 +47,7 @@ class AuthTelegramController extends Controller
 
         $token = base64_encode(random_bytes(36));
 
-        $user->load('masterSettings');
-        $settings = $user->masterSettings;
-        $hasSettings = $settings && is_array($settings->work_days) && count($settings->work_days) > 0
-            && ! empty($settings->work_time_from)
-            && ! empty($settings->work_time_to)
-            && (int) ($settings->slot_duration_min ?? 0) > 0;
-        $redirect = $hasSettings ? url('/master/calendar') : url('/master/settings');
+        $redirect = url('/master/calendar');
 
         return response()->json([
             'token' => $token,

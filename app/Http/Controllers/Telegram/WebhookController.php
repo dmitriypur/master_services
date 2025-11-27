@@ -24,7 +24,7 @@ class WebhookController extends Controller
             $bot->sendMessage($chatId, 'Привет! Выберите раздел.');
 
             $base = rtrim((string) config('app.url'), '/');
-            $masterUrl = $base.'/master/register?webview=1';
+            $masterUrl = $base.'/app?webview=1';
             $clientUrl = $base.'/book?webview=1';
             $bot->sendMessage($chatId, 'Открыть приложение', [
                 'reply_markup' => [
