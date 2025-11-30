@@ -24,9 +24,21 @@ class CreateAppointmentAction
     {
         $master = null;
         if (! empty($data['master_id'])) {
-            $master = User::query()->where('id', (int) $data['master_id'])->where('role', 'master')->firstOrFail();
+            $master = User::query()
+                ->where('id', (int) $data['master_id'])
+                ->where('role', 'master')
+                ->firstOrFail();
         } else {
-            $master = Auth::user();
+            $userId = Auth::id();
+            if ($userId === null) {
+                throw ValidationException::withMessages([
+                    'master_id' => ['Требуется авторизация'],
+                ]);
+            }
+            $master = User::query()
+                ->where('id', $userId)
+                ->where('role', 'master')
+                ->firstOrFail();
         }
 
         $serviceId = (int) $data['service_id'];
@@ -53,13 +65,42 @@ class CreateAppointmentAction
             }
             $clientId = $client->id;
         } else {
-            $client = $this->createClient->execute([
-                'user_id' => $master->id,
-                'name' => (string) $data['client_name'],
-                'phone' => (string) ($data['client_phone'] ?? ''),
-                'preferred_channels' => $data['preferred_channels'] ?? [],
-            ]);
-            $clientId = $client->id;
+            // Пробуем найти клиента по телефону, если он передан
+            $rawPhone = isset($data['client_phone']) ? (string) $data['client_phone'] : '';
+            $digits = preg_replace('/\D+/', '', $rawPhone);
+            if ($digits !== '') {
+                if (strlen($digits) === 11 && str_starts_with($digits, '8')) {
+                    $digits = '7'.substr($digits, 1);
+                }
+                if (strlen($digits) === 10) {
+                    $digits = '7'.$digits;
+                }
+                if (strlen($digits) !== 11 || ! str_starts_with($digits, '7')) {
+                    $digits = '';
+                }
+            }
+            $phone = $digits !== '' ? $digits : null;
+
+            if ($phone !== null) {
+                $client = Client::query()
+                    ->where('user_id', $master->id)
+                    ->where('phone', $phone)
+                    ->first();
+            } else {
+                $client = null;
+            }
+
+            if ($client) {
+                $clientId = $client->id;
+            } else {
+                $client = $this->createClient->execute([
+                    'user_id' => $master->id,
+                    'name' => (string) $data['client_name'],
+                    'phone' => $phone,
+                    'preferred_channels' => $data['preferred_channels'] ?? [],
+                ]);
+                $clientId = $client->id;
+            }
         }
 
         $tz = config('app.timezone');

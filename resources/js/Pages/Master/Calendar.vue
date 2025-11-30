@@ -89,30 +89,50 @@
 
           <div>
             <label class="block text-sm font-medium mb-2">Клиент</label>
-            <div class="flex items-center gap-4 mb-2 text-sm">
-              <label class="flex items-center gap-2"><input type="radio" value="existing" v-model="clientMode"> Существующий</label>
-              <label class="flex items-center gap-2"><input type="radio" value="new" v-model="clientMode"> Новый</label>
-              <button type="button" class="inline-flex items-center rounded bg-gray-900 text-white px-2 py-1" @click="voiceOpen = !voiceOpen">Голосовой Ввод</button>
+            
+            <!-- Упрощенная форма клиента -->
+            <div class="space-y-3">
+               <div>
+                 <input 
+                   v-model="form.client_name" 
+                   type="text" 
+                   placeholder="Имя клиента" 
+                   class="block w-full rounded border px-3 py-2" 
+                 />
+               </div>
+               <div>
+                 <input 
+                   v-model="form.client_phone" 
+                   type="tel" 
+                   inputmode="numeric" 
+                   maxlength="11" 
+                   placeholder="Телефон (7999...)" 
+                   class="block w-full rounded border px-3 py-2" 
+                   @input="onPhoneInput" 
+                 />
+                 <p class="text-xs text-gray-500 mt-1">Если клиент с таким номером есть, запись привяжется к нему.</p>
+               </div>
+               
+               <div class="text-sm border-t pt-2 mt-2">
+                 <div class="mb-1 font-medium text-gray-700">Каналы связи</div>
+                 <div class="flex items-center gap-3">
+                   <label class="flex items-center gap-2"><input type="checkbox" value="phone" v-model="form.preferred_channels"> Звонок</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" value="telegram" v-model="form.preferred_channels"> Telegram</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" value="whatsapp" v-model="form.preferred_channels"> WhatsApp</label>
+                 </div>
+               </div>
             </div>
-            <div v-if="clientMode === 'existing'">
-              <select v-model.number="form.client_id" class="block w-full rounded border px-3 py-2">
-                <option :value="null">Выберите клиента</option>
-                <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }} — {{ c.phone }}</option>
-              </select>
+            
+            <div v-if="form.client_phone && !phoneValid" class="text-red-600 text-sm mt-1">Телефон: только цифры, 5–11 символов</div>
+            
+            <!-- Кнопка голосового ввода -->
+            <div class="mt-3">
+              <button type="button" class="text-sm text-indigo-600 hover:underline" @click="voiceOpen = !voiceOpen">
+                {{ voiceOpen ? 'Скрыть голосовой ввод' : '🎤 Открыть голосовой ввод' }}
+              </button>
             </div>
-            <div v-else class="space-y-3">
-              <input v-model="form.client_name" type="text" placeholder="Имя" class="block w-full rounded border px-3 py-2" />
-              <input v-model="form.client_phone" type="text" inputmode="numeric" maxlength="11" placeholder="Телефон (только цифры)" class="block w-full rounded border px-3 py-2" @input="onPhoneInput" />
-              <div class="text-sm">
-                <div class="mb-1">Предпочтительные каналы</div>
-                <div class="flex items-center gap-3">
-                  <label class="flex items-center gap-2"><input type="checkbox" value="phone" v-model="form.preferred_channels"> Телефон</label>
-                  <label class="flex items-center gap-2"><input type="checkbox" value="telegram" v-model="form.preferred_channels"> Telegram</label>
-                  <label class="flex items-center gap-2"><input type="checkbox" value="whatsapp" v-model="form.preferred_channels"> WhatsApp</label>
-                </div>
-              </div>
-              <div v-if="clientMode==='new' && form.value?.client_phone && !phoneValid" class="text-red-600 text-sm">Телефон: только цифры, 5–11 символов</div>
-              <div v-if="voiceOpen" class="mt-3 space-y-2">
+
+            <div v-if="voiceOpen" class="mt-2 space-y-2">
                 <div class="relative">
                   <textarea 
                     v-model="voiceText" 
@@ -121,15 +141,18 @@
                     :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
                   />
                   <button 
-                    v-if="voiceText" 
-                    type="button" 
-                    class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                    @click="voiceText = ''"
-                    title="Очистить"
-                  >
-                    ✕
-                  </button>
+                     v-if="voiceText" 
+                     type="button" 
+                     class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 z-20"
+                     @click="voiceText = ''"
+                     title="Очистить"
+                   >
+                     ✕
+                   </button>
                 </div>
+                
+                <!-- Подсветка распознанного текста -->
+                <div v-if="voiceText" class="p-2 bg-gray-50 rounded border border-gray-200 text-sm" v-html="highlightText(voiceText)"></div>
                 <div class="flex items-center gap-2">
                   <Button 
                     type="button" 
@@ -149,11 +172,26 @@
                     <span v-if="isParsing">⏳...</span>
                     <span v-else>Распознать</span>
                   </Button>
-                  <div v-if="voiceError" class="text-red-600 text-sm">{{ voiceError }}</div>
+                  <div v-if="voiceError" class="text-red-600 text-sm">
+                      <div>{{ voiceError }}</div>
+                      <div v-if="suggestedSlots.length > 0" class="mt-2">
+                          <div class="text-gray-600 mb-1">Свободное время рядом:</div>
+                          <div class="flex gap-2">
+                              <button 
+                                v-for="slot in suggestedSlots" 
+                                :key="slot.time"
+                                type="button"
+                                class="px-2 py-1 bg-green-100 text-green-800 rounded border border-green-200 text-xs hover:bg-green-200"
+                                @click="selectSuggestedSlot(slot.time)"
+                              >
+                                {{ slot.time }}
+                              </button>
+                          </div>
+                      </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
           <div v-if="errorMessage" class="text-red-600 text-sm">{{ errorMessage }}</div>
 
@@ -255,9 +293,8 @@ const services = ref([])
 const clients = ref([])
 const showModal = ref(false)
 const errorMessage = ref('')
-const clientMode = ref('existing')
 const modalTab = ref('book')
-const form = ref({ date: '', time: '', service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] })
+const form = ref({ date: '', time: '', service_id: null, client_name: '', client_phone: '', preferred_channels: [] })
 const showInfoModal = ref(false)
 const info = ref({ id: null, date: '', time: '', client: null, service: null, break_id: null })
 const MIN_PHONE_DIGITS = 5
@@ -269,6 +306,31 @@ const voiceError = ref('')
 const isListening = ref(false)
 const isParsing = ref(false)
 let recognition = null
+
+function highlightText(text) {
+  if (!text) return ''
+  // Простая подсветка ключевых слов (можно улучшить, получая диапазоны от сервера)
+  // Здесь мы просто подсвечиваем цифры времени и телефона, и имена с большой буквы
+  
+  let html = text
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;') // Экранируем HTML
+    
+  // Подсветка времени (14:00, 14 30)
+  html = html.replace(/(\d{1,2}[:\s-]\d{2})/g, '<span class="bg-yellow-200 rounded px-0.5">$1</span>')
+  
+  // Подсветка телефона (последовательность цифр > 5)
+  html = html.replace(/(\+?\d[\d\s-]{5,})/g, '<span class="bg-blue-100 rounded px-0.5">$1</span>')
+  
+  // Подсветка слов с большой буквы (потенциальные имена)
+  // Исключаем начало предложения... сложно без NLP.
+  // Просто подсветим всё, что похоже на имя
+  html = html.replace(/\b([A-ZА-ЯЁ][a-zа-яё]{2,})\b/g, '<span class="bg-green-100 rounded px-0.5">$1</span>')
+  
+  return html
+}
+
+let silenceTimer = null
+const SILENCE_TIMEOUT = 2000 // 2 секунды тишины
 
 function toggleRecording() {
   if (isListening.value) {
@@ -293,19 +355,28 @@ function startRecording() {
   recognition.onstart = () => {
     isListening.value = true
     voiceError.value = ''
+    // Сбрасываем таймер при старте
+    if (silenceTimer) clearTimeout(silenceTimer)
   }
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript
-    // Добавляем текст к уже существующему, а не затираем
     voiceText.value = (voiceText.value ? voiceText.value.trim() + ' ' : '') + transcript
+    
+    // Если распознали что-то, запускаем таймер тишины
+    // Но так как continuous=false, запись сама остановится после фразы.
+    // Поэтому здесь можно сразу вызывать парсинг, если хотим "быстрый" режим.
+    // Или можно перезапускать запись, если хотим continuous.
+    // В текущем варианте (continuous=false) браузер сам стопнет запись после фразы.
+    // Мы можем в onend проверить: если был текст - парсим.
   }
 
   recognition.onerror = (event) => {
     console.error('Speech recognition error', event.error)
     if (event.error === 'not-allowed') {
       voiceError.value = 'Доступ к микрофону запрещен.'
-    } else {
+    } else if (event.error !== 'no-speech') {
+       // no-speech игнорируем, это просто тишина
       voiceError.value = 'Ошибка распознавания: ' + event.error
     }
     stopRecording()
@@ -313,6 +384,13 @@ function startRecording() {
 
   recognition.onend = () => {
     stopRecording()
+    // АВТО-РАСПОЗНАВАНИЕ:
+    // Если текст есть и запись остановилась сама (не кнопкой Стоп, хотя тут сложно различить),
+    // то пробуем распознать. Чтобы не распознавать случайно, добавим задержку.
+    if (voiceText.value.trim().length > 0 && !isParsing.value) {
+        // Можно запустить парсинг автоматически
+        parseVoice()
+    }
   }
 
   recognition.start()
@@ -320,6 +398,7 @@ function startRecording() {
 
 function stopRecording() {
   isListening.value = false
+  if (silenceTimer) clearTimeout(silenceTimer)
   if (recognition) {
     recognition.stop()
     recognition = null
@@ -328,9 +407,8 @@ function stopRecording() {
 
 const phoneValid = computed(() => {
   const len = (form.value.client_phone || '').length
-  // Если поле пустое - это валидно (т.к. необязательно)
   if (len === 0) return true
-  return clientMode.value === 'existing' ? true : (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
+  return (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
 })
 function onPhoneInput(e) {
   const val = String(e.target.value || '')
@@ -392,15 +470,15 @@ function handleClick(slot) {
 
 function openCreateModal(slot) {
   const dateStr = formatDateLocal(selectedDate.value)
-  form.value = { date: dateStr, time: slot.time, service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] }
-  clientMode.value = 'existing'
+  form.value = { date: dateStr, time: slot.time, service_id: null, client_name: '', client_phone: '', preferred_channels: [] }
   errorMessage.value = ''
   showModal.value = true
   modalTab.value = 'book'
   voiceOpen.value = false
   voiceText.value = ''
   voiceError.value = ''
-  if (services.value.length === 0 || clients.value.length === 0) {
+  suggestedSlots.value = []
+  if (services.value.length === 0) {
     fetchServicesAndClients()
   }
 }
@@ -408,20 +486,18 @@ function openCreateModal(slot) {
 function openGlobalVoiceModal() {
   // Открываем пустую модалку, без привязки к слоту
   const dateStr = formatDateLocal(selectedDate.value)
-  form.value = { date: dateStr, time: '', service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] }
-  clientMode.value = 'new' // Сразу новый клиент, так как мы не знаем кого выберут
+  form.value = { date: dateStr, time: '', service_id: null, client_name: '', client_phone: '', preferred_channels: [] }
   errorMessage.value = ''
   showModal.value = true
   modalTab.value = 'book'
   voiceOpen.value = true // Сразу открываем голосовой блок
   voiceText.value = ''
   voiceError.value = ''
+  suggestedSlots.value = []
   
-  if (services.value.length === 0 || clients.value.length === 0) {
+  if (services.value.length === 0) {
     fetchServicesAndClients()
   }
-  // Можно сразу запустить запись, если нужно:
-  // startRecording()
 }
 
 function closeModal() {
@@ -431,18 +507,16 @@ function closeModal() {
 async function submitCreate() {
   errorMessage.value = ''
   const payload = { date: form.value.date, time: form.value.time, service_id: form.value.service_id }
-  if (clientMode.value === 'existing') {
-    payload.client_id = form.value.client_id
-  } else {
-    // Телефон теперь необязателен. Но если он введен, то валидируем длину.
-    if (form.value.client_phone && !phoneValid.value) { 
-        errorMessage.value = 'Телефон: только цифры, 5–11 символов (или оставьте пустым)'; 
-        return 
-    }
-    payload.client_name = form.value.client_name
-    payload.client_phone = form.value.client_phone
-    payload.preferred_channels = form.value.preferred_channels
+  
+  // Телефон теперь необязателен. Но если он введен, то валидируем длину.
+  if (form.value.client_phone && !phoneValid.value) { 
+      errorMessage.value = 'Телефон: только цифры, 5–11 символов (или оставьте пустым)'; 
+      return 
   }
+  payload.client_name = form.value.client_name
+  payload.client_phone = form.value.client_phone
+  payload.preferred_channels = form.value.preferred_channels
+  
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   const res = await apiFetch('/api/appointments', {
     method: 'POST',
@@ -526,6 +600,41 @@ async function cancelDayOff() {
   await fetchSlots()
 }
 
+const suggestedSlots = ref([])
+
+function suggestFreeSlots(requestedTime) {
+  suggestedSlots.value = []
+  if (!slots.value.length) return
+
+  const [reqH, reqM] = requestedTime.split(':').map(Number)
+  const reqMinutes = reqH * 60 + reqM
+
+  // Ищем слоты в радиусе +/- 90 минут
+  const candidates = slots.value.filter(s => {
+      if (!s.available || s.is_past) return false
+      const [h, m] = s.time.split(':').map(Number)
+      const mins = h * 60 + m
+      return Math.abs(mins - reqMinutes) <= 90
+  })
+  
+  // Сортируем по близости к запрошенному времени
+  candidates.sort((a, b) => {
+      const [ah, am] = a.time.split(':').map(Number)
+      const [bh, bm] = b.time.split(':').map(Number)
+      const diffA = Math.abs((ah * 60 + am) - reqMinutes)
+      const diffB = Math.abs((bh * 60 + bm) - reqMinutes)
+      return diffA - diffB
+  })
+
+  suggestedSlots.value = candidates.slice(0, 3) // Берем топ-3
+}
+
+function selectSuggestedSlot(time) {
+    form.value.time = time
+    suggestedSlots.value = []
+    voiceError.value = ''
+}
+
 async function parseVoice() {
   voiceError.value = ''
   const text = voiceText.value.trim()
@@ -535,11 +644,11 @@ async function parseVoice() {
   try {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     const res = await apiFetch('/api/master/parse-voice-command', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-    body: JSON.stringify({ text }),
-    credentials: 'include', // Важно для сессий
-  })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+      body: JSON.stringify({ text }),
+      credentials: 'include', // Важно для сессий
+    })
     
     if (!res.ok) {
       try { const d = await res.json(); voiceError.value = d.message || 'Ошибка распознавания' } catch (e) { voiceError.value = 'Ошибка распознавания' }
@@ -587,11 +696,13 @@ async function parseVoice() {
                form.value.time = parsedTime
                changed = true
             } else {
-               voiceError.value = `Время ${parsedTime} занято или недоступно.`
+               voiceError.value = `Время ${parsedTime} занято.`
+               suggestFreeSlots(parsedTime) // Предлагаем ближайшие
             }
          } else {
             // Слот не найден (например, время вне графика)
-             voiceError.value = `Время ${parsedTime} не найдено в расписании.`
+             voiceError.value = `Время ${parsedTime} не найдено.`
+             suggestFreeSlots(parsedTime)
          }
        }
     } else if (!isGlobalMode && r.time) {
@@ -605,9 +716,7 @@ async function parseVoice() {
       if (found) { form.value.service_id = found.id; changed = true }
     }
     
-    if (changed) {
-      clientMode.value = 'new'
-    } else {
+    if (!changed) {
       voiceError.value = 'Не удалось найти данные (имя, телефон или время) в тексте.'
     }
   } catch (e) {
