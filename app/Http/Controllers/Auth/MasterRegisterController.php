@@ -82,12 +82,12 @@ class MasterRegisterController extends Controller
             'password' => $password, // Будет хешироваться автоматически через casts
             'role' => 'master',
             'telegram_id' => $telegramId,
-            'city_id' => (int) $payload['city_id'],
+            'city_id' => !empty($payload['city_id']) ? (int) $payload['city_id'] : null,
             'phone' => $phone,
             'subscription_status' => 'trial',
         ]);
 
-        $serviceIds = array_map('intval', (array) $payload['services']);
+        $serviceIds = array_map('intval', (array) ($payload['services'] ?? []));
         $active = [];
         foreach ($serviceIds as $sid) {
             if (Service::query()->where('id', $sid)->exists()) {

@@ -37,7 +37,15 @@ class AuthTelegramController extends Controller
         $user = User::query()
             ->where('telegram_id', (int) $userData['id'])
             ->where('role', 'master')
-            ->firstOrFail();
+            ->first();
+
+        if (! $user) {
+             // Если пользователя нет, возвращаем 404, чтобы фронт перекинул на регистрацию
+             return response()->json(['message' => 'User not found'], 404);
+        }
+        
+        Auth::login($user, true);
+        $request->session()->regenerate();
 
         $redirect = url('/master/calendar');
 

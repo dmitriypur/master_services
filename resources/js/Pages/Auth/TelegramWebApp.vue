@@ -68,6 +68,15 @@ async function tryAuth() {
     credentials: 'same-origin',
   })
   if (!res.ok) {
+    // Если пользователь не найден (404) или другая ошибка, но это WebApp - перенаправляем на регистрацию
+    if (res.status === 404 || res.status === 401) {
+        // Здесь мы передаем initData через URL, чтобы форма регистрации сразу его подхватила
+        // и не требовала пароль, а сразу регистрировала через Telegram
+        // Важно: initData нужно закодировать
+        window.location.href = '/master/register?initData=' + encodeURIComponent(initData)
+        return
+    }
+
     let msg = 'Ошибка авторизации'
     try {
       const data = await res.json()

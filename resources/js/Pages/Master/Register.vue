@@ -25,29 +25,35 @@
         <label class="block text-sm font-medium">ФИО</label>
         <input v-model="form.name" type="text" class="mt-1 w-full border rounded p-2" />
       </div>
-      <div>
-        <label class="block text-sm font-medium">Город</label>
-        <select v-model="form.city_id" class="mt-1 w-full border rounded p-2">
-          <option :value="null">Выберите город</option>
-          <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Телефон</label>
-        <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="mt-1 w-full border rounded p-2" placeholder="Телефон (только цифры)" />
-      </div>
       <div v-if="!initData && !telegramUser">
-        <label class="block text-sm font-medium">Пароль</label>
-        <input v-model="form.password" type="password" class="mt-1 w-full border rounded p-2" placeholder="Минимум 8 символов" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Услуги</label>
-        <div class="mt-2 grid grid-cols-1 gap-2">
-          <label v-for="s in services" :key="s.id" class="inline-flex items-center gap-2">
-            <input type="checkbox" :value="s.id" v-model="form.services" />
-            <span>{{ s.name }}</span>
-          </label>
+        <div>
+          <label class="block text-sm font-medium">Город</label>
+          <select v-model="form.city_id" class="mt-1 w-full border rounded p-2">
+            <option :value="null">Выберите город</option>
+            <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
         </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium">Телефон</label>
+          <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="mt-1 w-full border rounded p-2" placeholder="Телефон (только цифры)" />
+        </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium">Пароль</label>
+          <input v-model="form.password" type="password" class="mt-1 w-full border rounded p-2" placeholder="Минимум 8 символов" />
+        </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium">Услуги</label>
+          <div class="mt-2 grid grid-cols-1 gap-2">
+            <label v-for="s in services" :key="s.id" class="inline-flex items-center gap-2">
+              <input type="checkbox" :value="s.id" v-model="form.services" />
+              <span>{{ s.name }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div v-else>
+         <p class="text-gray-600 text-sm mb-4">Нажимая "Зарегистрироваться", вы принимаете условия сервиса. Остальные данные можно заполнить позже в личном кабинете.</p>
       </div>
       <div class="text-red-600 text-sm" v-if="error">{{ error }}</div>
       <div class="text-green-700 text-sm" v-if="success">{{ success }}</div>
@@ -147,6 +153,8 @@ onMounted(async () => {
       if (!form.value.name) {
         form.value.name = [fn, ln].filter(Boolean).join(' ') || (un ? `@${un}` : '')
       }
+      // Автоматическая регистрация при входе через виджет
+      submit()
     }
   }
 })
