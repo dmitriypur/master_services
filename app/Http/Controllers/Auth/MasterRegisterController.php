@@ -18,25 +18,48 @@ class MasterRegisterController extends Controller
     public function store(MasterRegisterRequest $request, TelegramWebAppService $service): JsonResponse
     {
         $payload = $request->validated();
-        $userData = $service->validateInitData((string) $request->input('initData'));
-        if (empty($userData['id'])) {
-            return response()->json(['message' => 'Неверные данные WebApp'], 422);
+        $initData = (string) ($request->input('initData') ?? '');
+        $telegramUser = $request->input('telegram_user'); // Данные от виджета
+        
+        $userData = [];
+        $isWidgetAuth = false;
+
+        if ($initData !== '') {
+             // Авторизация через WebApp (внутри Telegram)
+             $userData = $service->validateInitData($initData);
+        } elseif (!empty($telegramUser) && is_array($telegramUser)) {
+             // Авторизация через Виджет (на сайте)
+             $userData = $service->validateLoginWidget($telegramUser);
+             $isWidgetAuth = true;
+        }
+        
+        // Если пытались через ТГ, но валидация не прошла
+        if (($initData !== '' || $isWidgetAuth) && empty($userData['id'])) {
+            return response()->json(['message' => 'Неверные данные Telegram'], 422);
         }
 
-        $existing = User::query()
-            ->where('telegram_id', $userData['id'])
-            ->where('role', 'master')
-            ->first();
-        if ($existing) {
-            Auth::login($existing, true);
-
-            return response()->json([
-                'message' => 'Уже зарегистрированы',
-                'redirect' => url('/master/settings'),
-            ]);
+        // Если регистрация БЕЗ Telegram (чисто сайт, без виджета), требуем пароль
+        if (empty($userData['id']) && empty($payload['password'])) {
+            return response()->json(['message' => 'Пароль обязателен для регистрации через сайт'], 422);
         }
 
-        $email = 'tg_'.$userData['id'].'@local';
+        // Проверка на существование (по telegram_id)
+        if (! empty($userData['id'])) {
+             $existing = User::query()
+                ->where('telegram_id', $userData['id'])
+                ->where('role', 'master')
+                ->first();
+             
+             if ($existing) {
+                Auth::login($existing, true);
+                return response()->json([
+                    'message' => 'Уже зарегистрированы',
+                    'redirect' => url('/master/settings'),
+                ]);
+             }
+        }
+        
+        // Обработка телефона
         $phone = null;
         if (! empty($payload['phone']) && is_string($payload['phone'])) {
             $digits = preg_replace('/\\D+/', '', (string) $payload['phone']) ?? '';
@@ -44,15 +67,24 @@ class MasterRegisterController extends Controller
                 $phone = $digits;
             }
         }
-        // Телефон только вручную
+        
+        if ($phone && User::query()->where('phone', $phone)->exists()) {
+             return response()->json(['message' => 'Пользователь с таким телефоном уже существует'], 422);
+        }
+
+        $email = ! empty($userData['id']) ? 'tg_'.$userData['id'].'@local' : 'phone_'.$phone.'@local';
+        $password = ! empty($payload['password']) ? $payload['password'] : Str::password(16);
+        $telegramId = ! empty($userData['id']) ? (int) $userData['id'] : null;
+
         $user = User::query()->create([
             'name' => (string) $payload['name'],
             'email' => $email,
-            'password' => Str::password(16),
+            'password' => $password, // Будет хешироваться автоматически через casts
             'role' => 'master',
-            'telegram_id' => (int) $userData['id'],
+            'telegram_id' => $telegramId,
             'city_id' => (int) $payload['city_id'],
             'phone' => $phone,
+            'subscription_status' => 'trial',
         ]);
 
         $serviceIds = array_map('intval', (array) $payload['services']);

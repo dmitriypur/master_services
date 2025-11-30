@@ -37,6 +37,7 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'bot_name' => env('TELEGRAM_BOT_NAME', 'my_bot_name'),
         'webapp_skip_signature' => (bool) env('TELEGRAM_WEBAPP_SKIP_SIGNATURE', false),
     ],
 

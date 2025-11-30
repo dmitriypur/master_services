@@ -14,7 +14,9 @@ class LoginController extends Controller
 {
     public function create()
     {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Auth/Login', [
+            'telegramBotName' => config('services.telegram.bot_name', 'your_bot_name'),
+        ]);
     }
 
     public function store(LoginRequest $request): RedirectResponse

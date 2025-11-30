@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Auth;
 
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class GenerateMasterTokenAction
 {
@@ -32,6 +33,7 @@ class GenerateMasterTokenAction
             $user = User::query()->create([
                 'name' => $name !== '' ? $name : ('tg_'.$tid),
                 'email' => 'tg_'.$tid.'@local',
+                'password' => Str::password(32),
                 'role' => 'master',
                 'telegram_id' => $tid,
                 'subscription_status' => 'trial',

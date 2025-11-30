@@ -22,7 +22,9 @@ class MasterRegisterRequest extends FormRequest
             'services' => ['required', 'array', 'min:1'],
             'services.*' => ['integer', Rule::exists('services', 'id')],
             'phone' => ['nullable', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
-            'initData' => ['required', 'string'],
+            'initData' => ['nullable', 'string'],
+            'password' => ['nullable', 'string', 'min:8'],
+            'telegram_user' => ['nullable', 'array'],
         ];
     }
 }

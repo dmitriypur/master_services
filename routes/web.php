@@ -42,6 +42,8 @@ Route::get('/app', function () {
 Route::post('/auth/telegram/webapp', [AuthTelegramController::class, 'store'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+Route::post('/auth/telegram/widget', [AuthTelegramController::class, 'widgetLogin']);
+
 Route::get('/master/register', function () {
     $cities = \App\Models\City::query()->where('is_active', true)->get(['id', 'name']);
     $services = \App\Models\Service::query()->orderBy('name')->get(['id', 'name']);
@@ -49,6 +51,7 @@ Route::get('/master/register', function () {
     return Inertia::render('Master/Register', [
         'cities' => $cities,
         'services' => $services,
+        'telegramBotName' => config('services.telegram.bot_name', 'your_bot_name'),
     ]);
 })->name('master.register');
 
