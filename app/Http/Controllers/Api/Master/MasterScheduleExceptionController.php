@@ -17,6 +17,19 @@ class MasterScheduleExceptionController extends Controller
         $data = $request->validated();
         $data['master_id'] = $request->user()->id;
 
+        // Prevent duplicates for day_off
+        if ($data['type'] === 'day_off') {
+            $exists = MasterScheduleException::query()
+                ->where('master_id', $data['master_id'])
+                ->where('date', $data['date'])
+                ->where('type', 'day_off')
+                ->exists();
+            
+            if ($exists) {
+                return response()->json(['message' => 'Уже установлен выходной'], 422);
+            }
+        }
+
         $exception = MasterScheduleException::query()->create($data);
 
         return response()->json(['id' => $exception->id], 201);

@@ -48,8 +48,15 @@
           >
             <div class="font-mono text-sm">{{ s.time }}</div>
             <div class="flex items-center justify-between">
-              <span v-if="s.is_past && s.available" class="text-gray-500">нет записи</span>
-              <span v-else :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
+              <!-- Прошедшие слоты -->
+              <template v-if="s.is_past">
+                 <span v-if="s.available" class="text-gray-500">нет записи</span>
+                 <span v-else class="text-red-600">занят</span>
+              </template>
+              <!-- Будущие слоты -->
+              <template v-else>
+                 <span :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
+              </template>
               
               <span v-if="!s.is_past" class="ml-2 text-xs text-gray-500">{{ s.available ? 'создать' : 'посмотреть' }}</span>
               <span v-else-if="!s.available" class="ml-2 text-xs text-gray-500">посмотреть</span>
@@ -222,6 +229,7 @@ function onPhoneInput(e) {
 }
 
 function formatDateLocal(date) {
+  if (!(date instanceof Date)) date = new Date(date)
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -257,11 +265,14 @@ async function fetchServicesAndClients() {
 
 function handleClick(slot) {
   if (slot.is_past) {
+    // Если слот прошел и он занят (available=false) - показываем инфо
+    // Если слот прошел и он свободен (available=true) - ничего не делаем (просто "нет записи")
     if (!slot.available) {
       openInfoModal(slot)
     }
     return
   }
+  // Для будущих слотов
   if (slot.available) {
     openCreateModal(slot)
   } else {
@@ -332,7 +343,7 @@ function addMinutesToTime(timeStr, minutes) {
 }
 
 async function submitBreak() {
-  const dateStr = form.value.date
+  const dateStr = formatDateLocal(selectedDate.value)
   const startTime = form.value.time
   const endTime = addMinutesToTime(form.value.time, breakDurationMin.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
@@ -343,7 +354,8 @@ async function submitBreak() {
     credentials: 'same-origin',
   })
   if (!res.ok) {
-    try { const d = await res.json(); errorMessage.value = d.message || 'Ошибка установки перерыва' } catch (e) { errorMessage.value = 'Ошибка установки перерыва' }
+    const d = await res.json().catch(() => ({}))
+    errorMessage.value = d.message || 'Ошибка установки перерыва'
     return
   }
   closeModal()
@@ -360,7 +372,8 @@ async function makeDayOff() {
     credentials: 'same-origin',
   })
   if (!res.ok) {
-    try { const d = await res.json(); /* swallow error UI */ } catch (e) {}
+    const data = await res.json().catch(() => ({}))
+    alert(data.message || 'Ошибка: не удалось сделать выходным')
   }
   await fetchSlots()
 }
@@ -374,7 +387,8 @@ async function cancelDayOff() {
     credentials: 'same-origin',
   })
   if (!res.ok) {
-    try { const d = await res.json(); /* swallow error UI */ } catch (e) {}
+    const data = await res.json().catch(() => ({}))
+    alert(data.message || 'Ошибка: не удалось отменить выходной')
   }
   await fetchSlots()
 }
