@@ -48,7 +48,7 @@
           >
             <div class="font-mono text-sm">{{ s.time }}</div>
             <div class="flex items-center justify-between">
-              <span v-if="s.is_past && s.available" class="text-gray-500">прошло</span>
+              <span v-if="s.is_past && s.available" class="text-gray-500">нет записи</span>
               <span v-else :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
               
               <span v-if="!s.is_past" class="ml-2 text-xs text-gray-500">{{ s.available ? 'создать' : 'посмотреть' }}</span>

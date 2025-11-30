@@ -7,17 +7,19 @@ namespace App\Http\Requests\Api\Master;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+use Illuminate\Support\Facades\Auth;
+
 class MasterScheduleExceptionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        return Auth::check();
     }
 
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date', 'after_or_equal:today'],
+            'date' => ['required', 'date'],
             'type' => ['required', Rule::in(['override', 'break', 'day_off'])],
             'start_time' => [
                 'nullable',

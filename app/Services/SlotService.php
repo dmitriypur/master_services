@@ -130,7 +130,7 @@ class SlotService
             $slots[] = [
                 'time' => $cursor->format('H:i'),
                 'starts_at' => $cursor->format('Y-m-d H:i:s'),
-                'available' => ! $overlaps && ! $isPast,
+                'available' => ! $overlaps,
                 'break_id' => $breakId,
                 'is_past' => $isPast,
             ];
