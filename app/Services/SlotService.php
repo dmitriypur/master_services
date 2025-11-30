@@ -27,7 +27,11 @@ class SlotService
 
         $dayOff = $exceptions->firstWhere('type', 'day_off');
         if ($dayOff) {
-            return [];
+            return [
+                'is_day_off' => true,
+                'day_off_id' => $dayOff->id,
+                'slots' => [],
+            ];
         }
 
         $override = $exceptions->firstWhere('type', 'override');
@@ -83,13 +87,20 @@ class SlotService
                 $bStart = Carbon::parse($date->toDateString().' '.$ex->start_time, $tz);
                 $bEnd = Carbon::parse($date->toDateString().' '.$ex->end_time, $tz);
                 if ($bStart->lt($bEnd)) {
-                    $busy[] = [$bStart, $bEnd];
+                    $busy[] = [
+                        'start' => $bStart,
+                        'end' => $bEnd,
+                        'type' => 'break',
+                        'id' => $ex->id,
+                    ];
                 }
             }
         }
 
         $slots = [];
         $cursor = $workStart->copy();
+        $now = Carbon::now($tz);
+
         while ($cursor->lt($workEnd)) {
             $slotEnd = $cursor->copy()->addMinutes($duration);
             if ($slotEnd->gt($workEnd)) {
@@ -97,23 +108,41 @@ class SlotService
             }
 
             $overlaps = false;
-            foreach ($busy as [$bStart, $bEnd]) {
+            $breakId = null;
+
+            foreach ($busy as $b) {
+                // Support old array format for appointments [start, end]
+                // and new array format for breaks ['start' => ..., 'end' => ..., 'type' => ..., 'id' => ...]
+                $bStart = $b['start'] ?? $b[0];
+                $bEnd = $b['end'] ?? $b[1];
+                
                 if ($bStart->lt($slotEnd) && $bEnd->gt($cursor)) {
                     $overlaps = true;
+                    if (($b['type'] ?? '') === 'break') {
+                        $breakId = $b['id'] ?? null;
+                    }
                     break;
                 }
             }
+            
+            $isPast = $cursor->lt($now);
 
             $slots[] = [
                 'time' => $cursor->format('H:i'),
                 'starts_at' => $cursor->format('Y-m-d H:i:s'),
-                'available' => ! $overlaps,
+                'available' => ! $overlaps && ! $isPast,
+                'break_id' => $breakId,
+                'is_past' => $isPast,
             ];
 
             $cursor->addMinutes($duration);
         }
 
-        return $slots;
+        return [
+            'is_day_off' => false,
+            'day_off_id' => null,
+            'slots' => $slots,
+        ];
     }
 
     public function isFree(User $master, Carbon $startsAt, Carbon $endsAt): bool

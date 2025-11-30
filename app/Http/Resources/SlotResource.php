@@ -14,6 +14,8 @@ class SlotResource extends JsonResource
             'time' => (string) ($this->resource['time'] ?? ''),
             'starts_at' => (string) ($this->resource['starts_at'] ?? ''),
             'available' => (bool) ($this->resource['available'] ?? false),
+            'break_id' => $this->resource['break_id'] ?? null,
+            'is_past' => (bool) ($this->resource['is_past'] ?? false),
         ];
     }
 }

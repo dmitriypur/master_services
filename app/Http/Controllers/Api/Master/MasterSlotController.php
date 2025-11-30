@@ -21,8 +21,14 @@ class MasterSlotController extends Controller
         $dateParam = (string) $request->query('date', Carbon::now()->toDateString());
         $date = Carbon::parse($dateParam);
 
-        $data = $slots->getSlotsForDate($user, $date);
+        $result = $slots->getSlotsForDate($user, $date);
 
-        return SlotResource::collection($data)->response();
+        return response()->json([
+            'data' => SlotResource::collection($result['slots'] ?? $result),
+            'meta' => [
+                'is_day_off' => $result['is_day_off'] ?? false,
+                'day_off_id' => $result['day_off_id'] ?? null,
+            ],
+        ]);
     }
 }

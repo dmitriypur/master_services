@@ -30,23 +30,29 @@
         <h2 class="text-lg font-medium">Слоты</h2>
         <div class="flex items-center gap-3">
           <div class="text-sm text-gray-600">Дата: <span class="font-mono">{{ formatDateLocal(selectedDate) }}</span></div>
-          <button class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
+          <button v-if="!isDayOff" class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
+          <button v-else class="inline-flex items-center rounded bg-green-700 text-white px-3 py-1.5" @click="cancelDayOff">Сделать рабочим</button>
         </div>
       </div>
       <div v-if="loading" class="text-gray-500">Загрузка…</div>
       <div v-else>
-        <div v-if="slots.length === 0" class="text-gray-500">Нет слотов на выбранную дату</div>
+        <div v-if="isDayOff" class="text-gray-500">Выходной день</div>
+        <div v-else-if="slots.length === 0" class="text-gray-500">Нет слотов на выбранную дату</div>
         <div v-else class="grid grid-cols-2 gap-3">
           <div
             v-for="s in slots"
             :key="s.starts_at"
             class="border border-gray-300 rounded-lg p-3 flex flex-col gap-2 cursor-pointer"
-            @click="s.available ? openCreateModal(s) : openInfoModal(s)"
+            :class="{ 'opacity-60 cursor-default': s.is_past && s.available }"
+            @click="handleClick(s)"
           >
             <div class="font-mono text-sm">{{ s.time }}</div>
             <div class="flex items-center justify-between">
-              <span :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
-              <span class="ml-2 text-xs text-gray-500">{{ s.available ? 'создать' : 'посмотреть' }}</span>
+              <span v-if="s.is_past && s.available" class="text-gray-500">прошло</span>
+              <span v-else :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
+              
+              <span v-if="!s.is_past" class="ml-2 text-xs text-gray-500">{{ s.available ? 'создать' : 'посмотреть' }}</span>
+              <span v-else-if="!s.available" class="ml-2 text-xs text-gray-500">посмотреть</span>
             </div>
           </div>
         </div>
@@ -132,17 +138,22 @@
     </Modal>
 
     <Modal :open="showInfoModal" @close="closeInfo">
-      <template #title>Запись</template>
-        <div class="space-y-3 text-sm">
+      <template #title>{{ info.break_id ? 'Перерыв' : 'Запись' }}</template>
+        <div class="space-y-3 text-sm" v-if="!info.break_id">
           <div>Время: <span class="font-mono">{{ info.time }}</span> | Дата: <span class="font-mono">{{ info.date }}</span></div>
           <a :href="'tel:' + info.client?.phone" class="block">Клиент: <span class="font-medium">{{ info.client?.name }}</span> <span class="text-gray-600">{{ info.client?.phone }}</span></a>
           <div>Услуга: <span class="font-medium">{{ info.service?.name }}</span></div>
           <MasterCrmNotes v-if="info.id" :appointment-id="info.id" />
         </div>
+        <div class="space-y-3 text-sm" v-else>
+           <div>Время: <span class="font-mono">{{ info.time }}</span></div>
+           <div>Статус: <span class="font-medium text-red-600">Перерыв</span></div>
+        </div>
         <div class="flex flex-wrap gap-2 items-center justify-between mt-4">
           <Button class="bg-red-700" type="button" @click="closeInfo">Закрыть</Button>
-          <Button class="bg-green-700" type="button" @click="notifyClient">Напомнить клиенту</Button>
-          <Button class="bg-indigo-600" type="button" @click="cancelAppointment">Удалить</Button>
+          <Button v-if="!info.break_id" class="bg-green-700" type="button" @click="notifyClient">Напомнить клиенту</Button>
+          <Button v-if="!info.break_id" class="bg-indigo-600" type="button" @click="cancelAppointment">Удалить</Button>
+          <Button v-if="info.break_id" class="bg-indigo-600" type="button" @click="cancelBreak">Удалить перерыв</Button>
         </div>
     </Modal>
   </div>
@@ -182,6 +193,8 @@ async function apiFetch(url, options = {}) {
 
 const selectedDate = ref(new Date())
 const slots = ref([])
+const isDayOff = ref(false)
+const dayOffId = ref(null)
 const loading = ref(false)
 const services = ref([])
 const clients = ref([])
@@ -191,7 +204,7 @@ const clientMode = ref('existing')
 const modalTab = ref('book')
 const form = ref({ date: '', time: '', service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] })
 const showInfoModal = ref(false)
-const info = ref({ id: null, date: '', time: '', client: null, service: null })
+const info = ref({ id: null, date: '', time: '', client: null, service: null, break_id: null })
 const MIN_PHONE_DIGITS = 5
 const MAX_PHONE_DIGITS = 11
 const breakDurationMin = ref(30)
@@ -221,7 +234,10 @@ async function fetchSlots() {
     const dateStr = formatDateLocal(selectedDate.value)
     const res = await apiFetch(`/api/masters/${props.user.id}/slots?date=${encodeURIComponent(dateStr)}`)
     const json = await res.json()
-    slots.value = Array.isArray(json) ? json : (json.data ?? [])
+    const data = json.data || []
+    slots.value = Array.isArray(data) ? data : []
+    isDayOff.value = json.meta?.is_day_off || false
+    dayOffId.value = json.meta?.day_off_id || null
   } finally {
     loading.value = false
   }
@@ -237,6 +253,20 @@ async function fetchServicesAndClients() {
   ])
   services.value = (await sRes.json()).data ?? []
   clients.value = (await cRes.json()).data ?? []
+}
+
+function handleClick(slot) {
+  if (slot.is_past) {
+    if (!slot.available) {
+      openInfoModal(slot)
+    }
+    return
+  }
+  if (slot.available) {
+    openCreateModal(slot)
+  } else {
+    openInfoModal(slot)
+  }
 }
 
 function openCreateModal(slot) {
@@ -335,6 +365,20 @@ async function makeDayOff() {
   await fetchSlots()
 }
 
+async function cancelDayOff() {
+  if (!dayOffId.value) return
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+  const res = await apiFetch(`/api/master/schedule-exceptions/${dayOffId.value}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    try { const d = await res.json(); /* swallow error UI */ } catch (e) {}
+  }
+  await fetchSlots()
+}
+
 async function parseVoice() {
   voiceError.value = ''
   const text = voiceText.value.trim()
@@ -369,7 +413,13 @@ async function parseVoice() {
 
 async function openInfoModal(slot) {
   const dateStr = formatDateLocal(selectedDate.value)
-  info.value = { id: null, date: dateStr, time: slot.time, client: null, service: null }
+  info.value = { id: null, date: dateStr, time: slot.time, client: null, service: null, break_id: slot.break_id ?? null }
+  
+  if (info.value.break_id) {
+    showInfoModal.value = true
+    return
+  }
+
   const res = await apiFetch(`/api/appointments/at?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(slot.time)}`, { credentials: 'same-origin' })
   if (res.ok) {
     const data = await res.json()
@@ -419,6 +469,22 @@ async function cancelAppointment() {
   if (res.ok) {
     closeInfo()
     await fetchSlots()
+  }
+}
+
+async function cancelBreak() {
+  if (!info.value.break_id) return
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+  const res = await apiFetch(`/api/master/schedule-exceptions/${info.value.break_id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+    credentials: 'same-origin',
+  })
+  if (res.ok) {
+    closeInfo()
+    await fetchSlots()
+  } else {
+    try { const d = await res.json(); /* swallow error UI */ } catch (e) {}
   }
 }
 </script>
