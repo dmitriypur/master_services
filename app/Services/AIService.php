@@ -57,7 +57,10 @@ class AIService
         // и не является услугой или ключевым словом.
         // Проще: берем все слова с большой буквы, исключаем известные.
         
-        $stopWords = ['Завтра', 'Сегодня', 'Вчера', 'В', 'На', 'С', 'Клиент', 'Телефон', 'Номер', 'Запись', 'Хочет', 'Нужно'];
+        $stopWords = [
+            'Завтра', 'Сегодня', 'Вчера', 'В', 'На', 'С', 'Клиент', 'Телефон', 'Номер', 'Запись', 'Хочет', 'Нужно',
+            'Запиши', 'Добавь', 'Поставь', 'Создай', 'Сделай', 'Зовут', 'Имя', 'Человек', 'Мужчина', 'Женщина', 'Девушка', 'Парень'
+        ];
         // Добавим услуги в стоп-слова (с большой буквы)
         foreach ($servicesMap as $s) {
             $stopWords[] = $s; 
@@ -66,24 +69,47 @@ class AIService
 
         // Разбиваем на слова
         $words = preg_split('/[\s,.;]+/', $text);
-        foreach ($words as $word) {
-            if (empty($word)) continue;
-            $firstChar = mb_substr($word, 0, 1);
-            
-            // Проверка на большую букву (кириллица или латиница)
-            if (mb_strtoupper($firstChar) === $firstChar && mb_strtolower($firstChar) !== $firstChar) {
-                // Исключаем цифры
-                if (preg_match('/\d/', $word)) continue;
-                
-                // Исключаем стоп-слова
-                if (in_array($word, $stopWords) || in_array(mb_convert_case($word, MB_CASE_TITLE, "UTF-8"), $stopWords)) {
-                    continue;
+        
+        // Попробуем найти имя после ключевых слов "Зовут", "Клиент", "Имя"
+        $nameMarkers = ['зовут', 'клиент', 'имя', 'это'];
+        foreach ($words as $index => $word) {
+            if (in_array(mb_strtolower($word), $nameMarkers) && isset($words[$index + 1])) {
+                $potentialName = $words[$index + 1];
+                // Если следующее слово с большой буквы и не стоп-слово
+                $firstChar = mb_substr($potentialName, 0, 1);
+                if (mb_strtoupper($firstChar) === $firstChar && mb_strlen($potentialName) > 2) {
+                     if (!in_array($potentialName, $stopWords)) {
+                         $clientName = $potentialName;
+                         break;
+                     }
                 }
+            }
+        }
+
+        if (!$clientName) {
+            foreach ($words as $index => $word) {
+                if (empty($word)) continue;
                 
-                // Если длина больше 2 букв - скорее всего имя
-                if (mb_strlen($word) > 2) {
-                    $clientName = $word;
-                    break; // Берем первое подходящее
+                // Пропускаем первое слово в предложении, если это глагол повелительного наклонения (Запиши, Добавь)
+                if ($index === 0 && in_array($word, ['Запиши', 'Добавь', 'Создай'])) continue;
+
+                $firstChar = mb_substr($word, 0, 1);
+                
+                // Проверка на большую букву (кириллица или латиница)
+                if (mb_strtoupper($firstChar) === $firstChar && mb_strtolower($firstChar) !== $firstChar) {
+                    // Исключаем цифры
+                    if (preg_match('/\d/', $word)) continue;
+                    
+                    // Исключаем стоп-слова
+                    if (in_array($word, $stopWords) || in_array(mb_convert_case($word, MB_CASE_TITLE, "UTF-8"), $stopWords)) {
+                        continue;
+                    }
+                    
+                    // Если длина больше 2 букв - скорее всего имя
+                    if (mb_strlen($word) > 2) {
+                        $clientName = $word;
+                        break; // Берем первое подходящее
+                    }
                 }
             }
         }
