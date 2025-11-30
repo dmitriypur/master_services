@@ -26,7 +26,13 @@
     </div>
 
     <div>
-      <h2 class="text-lg font-medium mb-3">Слоты</h2>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-medium">Слоты</h2>
+        <div class="flex items-center gap-3">
+          <div class="text-sm text-gray-600">Дата: <span class="font-mono">{{ formatDateLocal(selectedDate) }}</span></div>
+          <button class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
+        </div>
+      </div>
       <div v-if="loading" class="text-gray-500">Загрузка…</div>
       <div v-else>
         <div v-if="slots.length === 0" class="text-gray-500">Нет слотов на выбранную дату</div>
@@ -48,8 +54,14 @@
     </div>
 
     <Modal :open="showModal" @close="closeModal">
-      <template #title>Новая запись</template>
-      <form @submit.prevent="submitCreate" class="space-y-4">
+      <template #title>
+        <div class="flex items-center gap-3">
+          <button type="button" :class="modalTab==='book' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='book'">Записать Клиента</button>
+          <span class="text-gray-400">•</span>
+          <button type="button" :class="modalTab==='break' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='break'">Установить Перерыв</button>
+        </div>
+      </template>
+      <form v-if="modalTab==='book'" @submit.prevent="submitCreate" class="space-y-4">
           <div class="text-sm text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
           <div>
             <label class="block text-sm font-medium mb-2">Услуга</label>
@@ -64,6 +76,7 @@
             <div class="flex items-center gap-4 mb-2 text-sm">
               <label class="flex items-center gap-2"><input type="radio" value="existing" v-model="clientMode"> Существующий</label>
               <label class="flex items-center gap-2"><input type="radio" value="new" v-model="clientMode"> Новый</label>
+              <button type="button" class="inline-flex items-center rounded bg-gray-900 text-white px-2 py-1" @click="voiceOpen = !voiceOpen">Голосовой Ввод</button>
             </div>
             <div v-if="clientMode === 'existing'">
               <select v-model.number="form.client_id" class="block w-full rounded border px-3 py-2">
@@ -83,6 +96,13 @@
                 </div>
               </div>
               <div v-if="clientMode==='new' && !phoneValid" class="text-red-600 text-sm">Телефон: только цифры, 5–11 символов</div>
+              <div v-if="voiceOpen" class="mt-3 space-y-2">
+                <textarea v-model="voiceText" rows="3" class="block w-full rounded border px-3 py-2" placeholder="Продиктуйте или вставьте текст: например, 'Светлана, завтра в 14:30 маникюр, телефон 89991234567'" />
+                <div class="flex items-center gap-2">
+                  <Button class="bg-indigo-700" type="button" @click="parseVoice">Распознать</Button>
+                  <div v-if="voiceError" class="text-red-600 text-sm">{{ voiceError }}</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -93,6 +113,22 @@
             <Button class="bg-indigo-700" type="submit">Создать</Button>
           </div>
       </form>
+      <div v-else class="space-y-4">
+        <div class="text-sm text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Длительность перерыва</label>
+          <select v-model.number="breakDurationMin" class="block w-full rounded border px-3 py-2">
+            <option :value="15">15 мин</option>
+            <option :value="30">30 мин</option>
+            <option :value="45">45 мин</option>
+            <option :value="60">60 мин</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+          <Button class="bg-red-700" type="button" @click="closeModal">Отмена</Button>
+          <Button class="bg-amber-600" type="button" @click="submitBreak">Установить</Button>
+        </div>
+      </div>
     </Modal>
 
     <Modal :open="showInfoModal" @close="closeInfo">
@@ -131,11 +167,16 @@ const clients = ref([])
 const showModal = ref(false)
 const errorMessage = ref('')
 const clientMode = ref('existing')
+const modalTab = ref('book')
 const form = ref({ date: '', time: '', service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] })
 const showInfoModal = ref(false)
 const info = ref({ id: null, date: '', time: '', client: null, service: null })
 const MIN_PHONE_DIGITS = 5
 const MAX_PHONE_DIGITS = 11
+const breakDurationMin = ref(30)
+const voiceOpen = ref(false)
+const voiceText = ref('')
+const voiceError = ref('')
 const phoneValid = computed(() => {
   const len = (form.value.client_phone || '').length
   return clientMode.value === 'existing' ? true : (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
@@ -183,6 +224,10 @@ function openCreateModal(slot) {
   clientMode.value = 'existing'
   errorMessage.value = ''
   showModal.value = true
+  modalTab.value = 'book'
+  voiceOpen.value = false
+  voiceText.value = ''
+  voiceError.value = ''
   if (services.value.length === 0 || clients.value.length === 0) {
     fetchServicesAndClients()
   }
@@ -225,6 +270,81 @@ async function submitCreate() {
   }
   closeModal()
   await fetchSlots()
+}
+
+function addMinutesToTime(timeStr, minutes) {
+  const [hh, mm] = String(timeStr || '00:00').split(':').map((v) => parseInt(v, 10) || 0)
+  let total = hh * 60 + mm + (minutes || 0)
+  if (total < 0) total = 0
+  const endH = Math.min(23, Math.floor(total / 60))
+  const endM = total % 60
+  return String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0')
+}
+
+async function submitBreak() {
+  const dateStr = form.value.date
+  const timeFrom = `${dateStr} ${form.value.time}`
+  const timeTo = `${dateStr} ${addMinutesToTime(form.value.time, breakDurationMin.value)}`
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+  const res = await fetch('/api/master/schedule-exceptions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify({ type: 'break', time_from: timeFrom, time_to: timeTo }),
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    try { const d = await res.json(); errorMessage.value = d.message || 'Ошибка установки перерыва' } catch (e) { errorMessage.value = 'Ошибка установки перерыва' }
+    return
+  }
+  closeModal()
+  await fetchSlots()
+}
+
+async function makeDayOff() {
+  const dateStr = formatDateLocal(selectedDate.value)
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+  const res = await fetch('/api/master/schedule-exceptions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify({ type: 'day_off', date: dateStr }),
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    try { const d = await res.json(); /* swallow error UI */ } catch (e) {}
+  }
+  await fetchSlots()
+}
+
+async function parseVoice() {
+  voiceError.value = ''
+  const text = voiceText.value.trim()
+  if (!text) { voiceError.value = 'Введите или продиктуйте текст'; return }
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+  const res = await fetch('/api/master/parse-voice-command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify({ text }),
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    try { const d = await res.json(); voiceError.value = d.message || 'Ошибка распознавания' } catch (e) { voiceError.value = 'Ошибка распознавания' }
+    return
+  }
+  const data = await res.json().catch(() => ({}))
+  const r = data || {}
+  if (r.client_name) { form.value.client_name = String(r.client_name) }
+  if (r.phone) { form.value.client_phone = String(r.phone).replace(/\D+/g, '').slice(0, MAX_PHONE_DIGITS) }
+  if (r.time) {
+    const t = String(r.time)
+    const m = t.match(/(\d{1,2}:\d{2})/)
+    if (m) { form.value.time = m[1] }
+  }
+  if (r.service_name && Array.isArray(services.value)) {
+    const name = String(r.service_name).toLowerCase().trim()
+    const found = services.value.find((s) => String(s.name || '').toLowerCase().includes(name))
+    if (found) { form.value.service_id = found.id }
+  }
+  clientMode.value = 'new'
 }
 
 async function openInfoModal(slot) {

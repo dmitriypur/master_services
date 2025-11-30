@@ -3,17 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ClientResource\Pages;
-use App\Filament\Resources\ClientResource\RelationManagers;
 use App\Models\Client;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use App\Models\User;
-use Filament\Forms\Get;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ClientResource extends Resource
 {
@@ -62,7 +58,7 @@ class ClientResource extends Resource
                                 'whatsapp' => 'WhatsApp',
                             ])
                             ->columnSpanFull(),
-                    ])
+                    ]),
             ]);
     }
 

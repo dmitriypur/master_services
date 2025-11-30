@@ -142,7 +142,7 @@ class UserResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('schedule')
                     ->label('График')
-                    ->state(fn (User $user) => ($user->masterSettings?->work_time_from ? ($user->masterSettings->work_time_from . '–' . $user->masterSettings->work_time_to) : null))
+                    ->state(fn (User $user) => ($user->masterSettings?->work_time_from ? ($user->masterSettings->work_time_from.'–'.$user->masterSettings->work_time_to) : null))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Создано')

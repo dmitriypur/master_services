@@ -37,7 +37,7 @@ class SendClientReminders extends Command
             }
         }
 
-        $this->info('Client reminders dispatched: ' . $dispatched);
+        $this->info('Client reminders dispatched: '.$dispatched);
 
         return self::SUCCESS;
     }

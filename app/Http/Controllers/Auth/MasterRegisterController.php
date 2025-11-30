@@ -29,13 +29,14 @@ class MasterRegisterController extends Controller
             ->first();
         if ($existing) {
             Auth::login($existing, true);
+
             return response()->json([
                 'message' => 'Уже зарегистрированы',
                 'redirect' => url('/master/settings'),
             ]);
         }
 
-        $email = 'tg_' . $userData['id'] . '@local';
+        $email = 'tg_'.$userData['id'].'@local';
         $phone = null;
         if (! empty($payload['phone']) && is_string($payload['phone'])) {
             $digits = preg_replace('/\\D+/', '', (string) $payload['phone']) ?? '';

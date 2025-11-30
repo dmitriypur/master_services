@@ -10,15 +10,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->string('phone')->nullable();
+        Schema::table('appointments', function (Blueprint $table): void {
+            $table->decimal('price', 8, 2)->nullable()->after('source');
         });
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->dropColumn('phone');
+        Schema::table('appointments', function (Blueprint $table): void {
+            $table->dropColumn('price');
         });
     }
 };

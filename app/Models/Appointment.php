@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Appointment extends Model
 {
+    public const STATUS_SCHEDULED = 'scheduled';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELED = 'canceled';
+
     protected $fillable = [
         'master_id',
         'client_id',
@@ -18,6 +24,8 @@ class Appointment extends Model
         'ends_at',
         'status',
         'source',
+        'price',
+        'private_notes',
         'reminder_for_master_sent_at',
         'reminder_for_client_sent_at',
     ];

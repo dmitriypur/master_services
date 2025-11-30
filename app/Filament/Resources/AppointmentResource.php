@@ -3,18 +3,15 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AppointmentResource\Pages;
-use App\Filament\Resources\AppointmentResource\RelationManagers;
 use App\Models\Appointment;
+use App\Models\Client;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Get;
-use Illuminate\Database\Eloquent\Builder;
-use App\Models\User;
-use App\Models\Client;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AppointmentResource extends Resource
 {
@@ -67,7 +64,7 @@ class AppointmentResource extends Resource
                             ->options([
                                 'scheduled' => 'Запланирована',
                                 'completed' => 'Завершена',
-                                'cancelled' => 'Отменена',
+                                'canceled' => 'Отменена',
                             ])
                             ->required(),
                         Forms\Components\Select::make('source')
@@ -77,7 +74,7 @@ class AppointmentResource extends Resource
                                 'web' => 'Сайт',
                                 'telegram' => 'Telegram',
                             ]),
-                    ])
+                    ]),
             ]);
     }
 
@@ -118,7 +115,7 @@ class AppointmentResource extends Resource
                     ->options([
                         'scheduled' => 'Запланирована',
                         'completed' => 'Завершена',
-                        'cancelled' => 'Отменена',
+                        'canceled' => 'Отменена',
                     ]),
             ])
             ->actions([

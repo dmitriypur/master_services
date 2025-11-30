@@ -3,16 +3,16 @@
 use App\Http\Controllers\Auth\AuthTelegramController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\MasterRegisterController;
 use App\Http\Controllers\Client\BookingController;
 use App\Http\Controllers\Client\MasterCalendarController;
-use App\Http\Controllers\Auth\MasterRegisterController;
 use App\Http\Controllers\Master\CalendarController;
 use App\Http\Controllers\Master\SettingsController;
 use App\Http\Controllers\Telegram\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Home');
@@ -45,6 +45,7 @@ Route::post('/auth/telegram/webapp', [AuthTelegramController::class, 'store'])
 Route::get('/master/register', function () {
     $cities = \App\Models\City::query()->where('is_active', true)->get(['id', 'name']);
     $services = \App\Models\Service::query()->orderBy('name')->get(['id', 'name']);
+
     return Inertia::render('Master/Register', [
         'cities' => $cities,
         'services' => $services,

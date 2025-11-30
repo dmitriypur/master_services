@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Services\Telegram\TelegramWebAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class AuthTelegramController extends Controller
 {
@@ -45,7 +44,7 @@ class AuthTelegramController extends Controller
         Auth::login($user, true);
         \Log::info('webapp-auth-success', ['user_id' => $user->id]);
 
-        $token = base64_encode(random_bytes(36));
+        $token = $user->createToken('telegram-token')->plainTextToken;
 
         $redirect = url('/master/calendar');
 

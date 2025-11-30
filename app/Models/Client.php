@@ -33,10 +33,10 @@ class Client extends Model
             return null;
         }
         if (strlen($digits) === 11 && str_starts_with($digits, '8')) {
-            $digits = '7' . substr($digits, 1);
+            $digits = '7'.substr($digits, 1);
         }
         if (strlen($digits) === 10) {
-            $digits = '7' . $digits;
+            $digits = '7'.$digits;
         }
         if (strlen($digits) !== 11) {
             return null;
@@ -44,6 +44,7 @@ class Client extends Model
         if (! str_starts_with($digits, '7')) {
             return null;
         }
+
         return $digits;
     }
 

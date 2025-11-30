@@ -53,6 +53,8 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'subscription_status' => 'string',
+            'trial_ends_at' => 'datetime',
         ];
     }
 
@@ -108,6 +110,19 @@ class User extends Authenticatable implements FilamentUser
     public function currentTariff(): ?Tariff
     {
         $subscription = $this->currentSubscription();
+
         return $subscription?->tariff;
+    }
+
+    public function isTrialExpired(): bool
+    {
+        if ($this->subscription_status !== 'trial') {
+            return false;
+        }
+        if ($this->trial_ends_at === null) {
+            return false;
+        }
+
+        return now()->greaterThan($this->trial_ends_at);
     }
 }

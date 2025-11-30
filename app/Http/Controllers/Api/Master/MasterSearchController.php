@@ -20,9 +20,9 @@ class MasterSearchController extends Controller
             ->where('role', 'master')
             ->whereHas('masterSettings', function ($q) {
                 $q->whereNotNull('work_time_from')
-                  ->whereNotNull('work_time_to')
-                  ->whereNotNull('slot_duration_min')
-                  ->whereRaw('json_array_length(work_days) > 0');
+                    ->whereNotNull('work_time_to')
+                    ->whereNotNull('slot_duration_min')
+                    ->whereRaw('json_array_length(work_days) > 0');
             })
             ->when(isset($filters['city_id']), fn ($q) => $q->where('city_id', $filters['city_id']))
             ->when(isset($filters['service_id']), function ($q) use ($filters) {

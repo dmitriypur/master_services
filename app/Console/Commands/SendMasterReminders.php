@@ -36,7 +36,7 @@ class SendMasterReminders extends Command
             }
         }
 
-        $this->info('Master reminders dispatched: ' . $dispatched);
+        $this->info('Master reminders dispatched: '.$dispatched);
 
         return self::SUCCESS;
     }

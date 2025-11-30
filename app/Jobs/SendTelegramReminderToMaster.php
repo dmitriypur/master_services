@@ -44,7 +44,7 @@ class SendTelegramReminderToMaster implements ShouldQueue
         $dt = $appointment->starts_at instanceof Carbon ? $appointment->starts_at->copy()->timezone($tz) : Carbon::parse((string) $appointment->starts_at, $tz);
         $serviceName = (string) ($appointment->service?->name ?? 'услуга');
         $clientName = (string) ($appointment->client?->name ?? 'клиент');
-        $text = 'Напоминание: ' . $serviceName . ' — ' . $clientName . ' ' . $dt->format('d.m.Y H:i');
+        $text = 'Напоминание: '.$serviceName.' — '.$clientName.' '.$dt->format('d.m.Y H:i');
 
         $ok = false;
         $error = null;

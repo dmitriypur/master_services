@@ -24,7 +24,7 @@ class NotifyAppointmentAction
         $tz = config('app.timezone');
         $dt = $appointment->starts_at instanceof Carbon ? $appointment->starts_at->copy()->timezone($tz) : Carbon::parse((string) $appointment->starts_at, $tz);
         $serviceName = (string) ($appointment->service?->name ?? 'услуга');
-        $text = 'Напоминание: ' . $serviceName . ' ' . $dt->format('d.m.Y H:i');
+        $text = 'Напоминание: '.$serviceName.' '.$dt->format('d.m.Y H:i');
 
         $result = [
             'telegram' => null,
@@ -62,7 +62,7 @@ class NotifyAppointmentAction
         if ($client && in_array('whatsapp', $channels, true)) {
             $phoneRaw = (string) ($client->whatsapp_phone ?? $client->phone ?? '');
             $digits = preg_replace('/\D+/', '', $phoneRaw) ?? '';
-            $url = $digits !== '' ? ('https://wa.me/' . $digits . '?text=' . urlencode($text)) : null;
+            $url = $digits !== '' ? ('https://wa.me/'.$digits.'?text='.urlencode($text)) : null;
 
             NotificationLog::query()->create([
                 'appointment_id' => $appointment->id,
