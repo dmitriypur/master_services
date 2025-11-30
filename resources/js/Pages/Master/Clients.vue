@@ -33,6 +33,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import MasterLayout from '../../Layouts/MasterLayout.vue'
+defineOptions({ layout: MasterLayout })
 
 const clients = ref([])
 const error = ref('')
@@ -91,4 +93,3 @@ onMounted(fetchClients)
 
 <style scoped>
 </style>
-

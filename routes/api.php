@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\TelegramLoginController;
 use App\Http\Controllers\Api\Master\AIController;
 use App\Http\Controllers\Api\Master\AppointmentCancelController;
 use App\Http\Controllers\Api\Master\AppointmentController;
@@ -22,6 +23,7 @@ Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/masters/{master}/services', [ServiceController::class, 'forMaster'])->whereNumber('master');
 Route::get('/masters/{master}/slots', [MasterSlotController::class, 'index'])->whereNumber('master');
 Route::get('/masters', [MasterSearchController::class, 'index']);
+Route::get('/auth/telegram-login', TelegramLoginController::class);
 // Создание записи только для авторизованного мастера
 
 Route::middleware(['web', 'auth'])->group(function () {

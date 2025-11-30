@@ -66,4 +66,32 @@ class TelegramWebAppService
 
         return [];
     }
+
+    public function validateLoginWidget(array $query): array
+    {
+        $data = $query;
+        $hash = (string) ($data['hash'] ?? '');
+        unset($data['hash']);
+
+        ksort($data);
+        $pairs = [];
+        foreach ($data as $k => $v) {
+            $pairs[] = $k.'='.$v;
+        }
+        $checkString = implode("\n", $pairs);
+
+        $secretKey = hash('sha256', $this->token, true);
+        $calcHash = hash_hmac('sha256', $checkString, $secretKey);
+
+        if (! hash_equals($hash, $calcHash)) {
+            return [];
+        }
+
+        return [
+            'id' => (int) ($query['id'] ?? 0),
+            'username' => (string) ($query['username'] ?? ''),
+            'first_name' => (string) ($query['first_name'] ?? ''),
+            'last_name' => (string) ($query['last_name'] ?? ''),
+        ];
+    }
 }

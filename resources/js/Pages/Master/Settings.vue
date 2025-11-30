@@ -114,7 +114,9 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { useForm } from '@inertiajs/vue3'
+import MasterLayout from '../../Layouts/MasterLayout.vue'
 const props = defineProps({ user: Object, cities: Array, settings: Object, servicesOptions: Array, selectedServiceIds: Array })
+defineOptions({ layout: MasterLayout })
 
 const form = useForm({
   city_id: props.user?.city_id ?? null,

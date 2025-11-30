@@ -74,6 +74,9 @@ class AppointmentResource extends Resource
                                 'web' => 'Сайт',
                                 'telegram' => 'Telegram',
                             ]),
+                        Forms\Components\Textarea::make('private_notes')
+                            ->label('Заметки мастера')
+                            ->columnSpanFull(),
                     ]),
             ]);
     }
@@ -105,6 +108,9 @@ class AppointmentResource extends Resource
                 Tables\Columns\TextColumn::make('source')
                     ->label('Источник')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('private_notes')
+                    ->label('Заметки')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('master_id')

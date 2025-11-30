@@ -6,14 +6,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TelegramWebAppAuthRequest;
+use App\Actions\Auth\GenerateMasterTokenAction;
 use App\Models\User;
 use App\Services\Telegram\TelegramWebAppService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 
 class AuthTelegramController extends Controller
 {
-    public function store(TelegramWebAppAuthRequest $request, TelegramWebAppService $service): JsonResponse
+    public function store(TelegramWebAppAuthRequest $request, TelegramWebAppService $service, GenerateMasterTokenAction $action): JsonResponse
     {
         \Log::info('webapp-auth-start', [
             'ua' => $request->header('User-Agent'),
@@ -29,22 +29,12 @@ class AuthTelegramController extends Controller
         $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? '')) ?: ($userData['username'] ?? ('tg_'.$userData['id']));
         $email = 'tg_'.$userData['id'].'@local';
 
+        $token = $action->execute((string) $userData['id'], $userData);
+
         $user = User::query()
-            ->where('telegram_id', $userData['id'])
+            ->where('telegram_id', (int) $userData['id'])
             ->where('role', 'master')
-            ->first();
-
-        if (! $user) {
-            return response()->json([
-                'message' => 'Требуется регистрация мастера',
-                'register_url' => url('/master/register'),
-            ], 403);
-        }
-
-        Auth::login($user, true);
-        \Log::info('webapp-auth-success', ['user_id' => $user->id]);
-
-        $token = $user->createToken('telegram-token')->plainTextToken;
+            ->firstOrFail();
 
         $redirect = url('/master/calendar');
 

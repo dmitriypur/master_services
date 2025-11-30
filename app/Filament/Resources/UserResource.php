@@ -62,6 +62,21 @@ class UserResource extends Resource
                             ->searchable(),
                     ]),
 
+                Forms\Components\Section::make('Подписка')
+                    ->schema([
+                        Forms\Components\Select::make('subscription_status')
+                            ->label('Статус подписки')
+                            ->options([
+                                'none' => 'Нет',
+                                'trial' => 'Триал',
+                                'active' => 'Активна',
+                                'paused' => 'Остановлена',
+                            ]),
+                        Forms\Components\DateTimePicker::make('trial_ends_at')
+                            ->label('Триал до')
+                            ->seconds(false),
+                    ]),
+
                 Forms\Components\Section::make('Настройки мастера')
                     ->relationship('masterSettings')
                     ->hidden(fn (Get $get) => $get('role') !== 'master')
@@ -137,6 +152,14 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('city.name')
                     ->label('Город')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('subscription_status')
+                    ->label('Подписка')
+                    ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('trial_ends_at')
+                    ->label('Триал до')
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('masterSettings.address')
                     ->label('Адрес')
                     ->toggleable(isToggledHiddenByDefault: true),

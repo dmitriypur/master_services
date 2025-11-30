@@ -137,6 +137,7 @@
           <div>Время: <span class="font-mono">{{ info.time }}</span> | Дата: <span class="font-mono">{{ info.date }}</span></div>
           <a :href="'tel:' + info.client?.phone" class="block">Клиент: <span class="font-medium">{{ info.client?.name }}</span> <span class="text-gray-600">{{ info.client?.phone }}</span></a>
           <div>Услуга: <span class="font-medium">{{ info.service?.name }}</span></div>
+          <MasterCrmNotes v-if="info.id" :appointment-id="info.id" />
         </div>
         <div class="flex flex-wrap gap-2 items-center justify-between mt-4">
           <Button class="bg-red-700" type="button" @click="closeInfo">Закрыть</Button>
@@ -156,8 +157,11 @@ import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import Modal from '../../components/UI/Modal.vue'
 import Button from '../../components/UI/Button.vue'
+import MasterCrmNotes from './MasterCrmNotes.vue'
+import MasterLayout from '../../Layouts/MasterLayout.vue'
 
 const props = defineProps({ user: Object })
+defineOptions({ layout: MasterLayout })
 
 function getAuthToken() {
   try { return localStorage.getItem('auth_token') || '' } catch (e) { return '' }
