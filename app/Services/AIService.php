@@ -10,9 +10,50 @@ class AIService
     {
         $clientName = null;
         $time = null;
+        $date = null; // Новое поле
         $serviceName = null;
         $phone = null;
         $comment = null;
+
+        $lowerText = mb_strtolower($text);
+
+        // 0. Дата (относительная и абсолютная)
+        $today = new \DateTime('now');
+        
+        if (str_contains($lowerText, 'послезавтра')) {
+            $date = $today->modify('+2 days')->format('Y-m-d');
+        } elseif (str_contains($lowerText, 'завтра')) {
+            $date = $today->modify('+1 day')->format('Y-m-d');
+        } elseif (str_contains($lowerText, 'сегодня')) {
+            $date = $today->format('Y-m-d');
+        } else {
+            // Поиск даты формата "8 декабря", "10.12", "10 12"
+            $months = [
+                'январ' => '01', 'феврал' => '02', 'март' => '03', 'апрел' => '04',
+                'мая' => '05', 'май' => '05', 'июн' => '06', 'июл' => '07',
+                'август' => '08', 'сентябр' => '09', 'октябр' => '10', 'ноябр' => '11', 'декабр' => '12'
+            ];
+            
+            // Паттерн для "8 декабря"
+            if (preg_match('/(\d{1,2})\s+([а-я]+)/u', $lowerText, $m)) {
+                $day = $m[1];
+                $monthStr = $m[2];
+                foreach ($months as $key => $val) {
+                    if (str_contains($monthStr, $key)) {
+                        $year = $today->format('Y');
+                        // Если месяц меньше текущего, возможно это следующий год? (пока считаем текущий)
+                        $date = sprintf('%s-%s-%02d', $year, $val, $day);
+                        break;
+                    }
+                }
+            }
+            
+            // Если не нашли текстом, ищем цифрами 10.12 или 10/12
+            if (!$date && preg_match('/(\d{1,2})[.\/](\d{1,2})/u', $text, $m)) {
+                 $year = $today->format('Y');
+                 $date = sprintf('%s-%02d-%02d', $year, $m[2], $m[1]);
+            }
+        }
 
         // 1. Телефон (ищем последовательность цифр от 10 до 12 знаков, возможно с +)
         // Улучшенная регулярка: +7 999 123-45-67 или 89991234567
@@ -125,6 +166,7 @@ class AIService
 
         return [
             'client_name' => $clientName ?? '',
+            'date' => $date ?? '',
             'time' => $time ?? '',
             'service_name' => $serviceName ?? '',
             'phone' => $phone ?? '',

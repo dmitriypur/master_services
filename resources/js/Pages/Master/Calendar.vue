@@ -537,6 +537,17 @@ async function parseVoice() {
     
     const isGlobalMode = !form.value.time // Если время изначально пустое - мы в глобальном режиме (или просто не выбрали слот)
     
+    // Обработка ДАТЫ (только в глобальном режиме)
+    if (isGlobalMode && r.date) {
+        const newDate = new Date(r.date)
+        // Если дата валидна и отличается от текущей выбранной
+        if (!isNaN(newDate) && formatDateLocal(newDate) !== form.value.date) {
+             selectedDate.value = newDate // Переключаем календарь
+             form.value.date = formatDateLocal(newDate) // Обновляем форму
+             changed = true
+        }
+    }
+
     if (isGlobalMode && r.time) {
        const t = String(r.time)
        const m = t.match(/(\d{1,2}:\d{2})/)
