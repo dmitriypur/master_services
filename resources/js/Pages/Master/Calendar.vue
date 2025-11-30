@@ -29,6 +29,9 @@
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-medium">Слоты</h2>
         <div class="flex items-center gap-3">
+          <Button class="bg-indigo-600 inline-flex items-center gap-2 text-sm px-3 py-1.5" @click="openGlobalVoiceModal">
+             <span>🎤 Голосовая запись</span>
+          </Button>
           <div class="text-sm text-gray-600">Дата: <span class="font-mono">{{ formatDateLocal(selectedDate) }}</span></div>
           <button v-if="!isDayOff" class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
           <button v-else class="inline-flex items-center rounded bg-green-700 text-white px-3 py-1.5" @click="cancelDayOff">Сделать рабочим</button>
@@ -108,9 +111,14 @@
                   <label class="flex items-center gap-2"><input type="checkbox" value="whatsapp" v-model="form.preferred_channels"> WhatsApp</label>
                 </div>
               </div>
-              <div v-if="clientMode==='new' && !phoneValid" class="text-red-600 text-sm">Телефон: только цифры, 5–11 символов</div>
+              <div v-if="clientMode==='new' && form.value?.client_phone && !phoneValid" class="text-red-600 text-sm">Телефон: только цифры, 5–11 символов</div>
               <div v-if="voiceOpen" class="mt-3 space-y-2">
-                <textarea v-model="voiceText" rows="3" class="block w-full rounded border px-3 py-2" placeholder="Продиктуйте или вставьте текст: например, 'Светлана, завтра в 14:30 маникюр, телефон 89991234567'" />
+                <textarea 
+                  v-model="voiceText" 
+                  rows="3" 
+                  class="block w-full rounded border px-3 py-2" 
+                  :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
+                />
                 <div class="flex items-center gap-2">
                   <Button 
                     type="button" 
@@ -298,6 +306,8 @@ function stopRecording() {
 
 const phoneValid = computed(() => {
   const len = (form.value.client_phone || '').length
+  // Если поле пустое - это валидно (т.к. необязательно)
+  if (len === 0) return true
   return clientMode.value === 'existing' ? true : (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
 })
 function onPhoneInput(e) {
@@ -373,6 +383,25 @@ function openCreateModal(slot) {
   }
 }
 
+function openGlobalVoiceModal() {
+  // Открываем пустую модалку, без привязки к слоту
+  const dateStr = formatDateLocal(selectedDate.value)
+  form.value = { date: dateStr, time: '', service_id: null, client_id: null, client_name: '', client_phone: '', preferred_channels: [] }
+  clientMode.value = 'new' // Сразу новый клиент, так как мы не знаем кого выберут
+  errorMessage.value = ''
+  showModal.value = true
+  modalTab.value = 'book'
+  voiceOpen.value = true // Сразу открываем голосовой блок
+  voiceText.value = ''
+  voiceError.value = ''
+  
+  if (services.value.length === 0 || clients.value.length === 0) {
+    fetchServicesAndClients()
+  }
+  // Можно сразу запустить запись, если нужно:
+  // startRecording()
+}
+
 function closeModal() {
   showModal.value = false
 }
@@ -383,7 +412,11 @@ async function submitCreate() {
   if (clientMode.value === 'existing') {
     payload.client_id = form.value.client_id
   } else {
-    if (!phoneValid.value) { errorMessage.value = 'Телефон: только цифры, 5–11'; return }
+    // Телефон теперь необязателен. Но если он введен, то валидируем длину.
+    if (form.value.client_phone && !phoneValid.value) { 
+        errorMessage.value = 'Телефон: только цифры, 5–11 символов (или оставьте пустым)'; 
+        return 
+    }
     payload.client_name = form.value.client_name
     payload.client_phone = form.value.client_phone
     payload.preferred_channels = form.value.preferred_channels
@@ -497,11 +530,38 @@ async function parseVoice() {
     let changed = false
     if (r.client_name) { form.value.client_name = String(r.client_name); changed = true }
     if (r.phone) { form.value.client_phone = String(r.phone).replace(/\D+/g, '').slice(0, MAX_PHONE_DIGITS); changed = true }
-    if (r.time) {
-      const t = String(r.time)
-      const m = t.match(/(\d{1,2}:\d{2})/)
-      if (m) { form.value.time = m[1]; changed = true }
+    
+    // Логика времени:
+    // 1. Если время уже было выбрано (открыли из слота) -> НЕ меняем его (игнорируем голос).
+    // 2. Если время пустое (глобальная кнопка) -> берем из голоса и ПРОВЕРЯЕМ занятость.
+    
+    const isGlobalMode = !form.value.time // Если время изначально пустое - мы в глобальном режиме (или просто не выбрали слот)
+    
+    if (isGlobalMode && r.time) {
+       const t = String(r.time)
+       const m = t.match(/(\d{1,2}:\d{2})/)
+       if (m) { 
+         const parsedTime = m[1]
+         // Проверяем, есть ли такой слот и свободен ли он
+         const slot = slots.value.find(s => s.time === parsedTime)
+         
+         if (slot) {
+            if (slot.available) {
+               form.value.time = parsedTime
+               changed = true
+            } else {
+               voiceError.value = `Время ${parsedTime} занято или недоступно.`
+            }
+         } else {
+            // Слот не найден (например, время вне графика)
+             voiceError.value = `Время ${parsedTime} не найдено в расписании.`
+         }
+       }
+    } else if (!isGlobalMode && r.time) {
+       // Мы в режиме слота, но голос вернул время. Мы его игнорируем, но можно показать уведомление.
+       // console.log('Игнорируем время из голоса, так как слот уже выбран')
     }
+
     if (r.service_name && Array.isArray(services.value)) {
       const name = String(r.service_name).toLowerCase().trim()
       const found = services.value.find((s) => String(s.name || '').toLowerCase().includes(name))
