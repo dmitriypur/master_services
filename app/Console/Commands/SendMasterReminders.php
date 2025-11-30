@@ -21,7 +21,7 @@ class SendMasterReminders extends Command
         $to = Carbon::now()->addMinutes(15);
 
         $appointments = Appointment::query()
-            ->where('status', 'planned')
+            ->where('status', Appointment::STATUS_SCHEDULED)
             ->whereNull('reminder_for_master_sent_at')
             ->whereBetween('starts_at', [$from, $to])
             ->with(['master', 'service', 'client'])

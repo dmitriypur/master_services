@@ -86,7 +86,7 @@ class CreateAppointmentAction
             'service_id' => $serviceId,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'status' => 'planned',
+            'status' => Appointment::STATUS_SCHEDULED,
             'source' => ((string) ($data['source'] ?? 'manual')) === 'client' ? 'client' : 'manual',
         ]);
 

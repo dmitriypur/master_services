@@ -31,7 +31,7 @@ class SendTelegramReminderToClient implements ShouldQueue
             return;
         }
 
-        if ($appointment->status !== 'planned' || $appointment->reminder_for_client_sent_at !== null) {
+        if ($appointment->status !== Appointment::STATUS_SCHEDULED || $appointment->reminder_for_client_sent_at !== null) {
             return;
         }
 

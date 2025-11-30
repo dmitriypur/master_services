@@ -15,8 +15,8 @@ class AppointmentCancelController extends Controller
     {
         abort_unless($appointment->master_id === Auth::id(), 404);
 
-        if ($appointment->status === 'planned') {
-            $appointment->status = 'canceled';
+        if ($appointment->status === Appointment::STATUS_SCHEDULED) {
+            $appointment->status = Appointment::STATUS_CANCELED;
             $appointment->save();
         }
 

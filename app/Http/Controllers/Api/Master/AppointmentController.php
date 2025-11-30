@@ -41,7 +41,7 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::query()
             ->where('master_id', $master->id)
-            ->where('status', 'planned')
+            ->where('status', Appointment::STATUS_SCHEDULED)
             ->where('starts_at', '<', $slotEnd)
             ->where('ends_at', '>', $slotStart)
             ->with(['client', 'service'])

@@ -16,10 +16,7 @@ class MasterScheduleExceptionRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = auth()->id();
-
         return [
-            'master_id' => ['required', 'integer', Rule::in([$userId])],
             'date' => ['required', 'date', 'after_or_equal:today'],
             'type' => ['required', Rule::in(['override', 'break', 'day_off'])],
             'start_time' => [

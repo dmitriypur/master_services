@@ -21,7 +21,7 @@ class SendClientReminders extends Command
         $to = Carbon::now()->addHour();
 
         $appointments = Appointment::query()
-            ->where('status', 'planned')
+            ->where('status', Appointment::STATUS_SCHEDULED)
             ->whereNull('reminder_for_client_sent_at')
             ->whereBetween('starts_at', [$from, $to])
             ->with(['client', 'service'])

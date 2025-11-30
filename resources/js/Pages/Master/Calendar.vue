@@ -303,13 +303,13 @@ function addMinutesToTime(timeStr, minutes) {
 
 async function submitBreak() {
   const dateStr = form.value.date
-  const timeFrom = `${dateStr} ${form.value.time}`
-  const timeTo = `${dateStr} ${addMinutesToTime(form.value.time, breakDurationMin.value)}`
+  const startTime = form.value.time
+  const endTime = addMinutesToTime(form.value.time, breakDurationMin.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   const res = await apiFetch('/api/master/schedule-exceptions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-    body: JSON.stringify({ type: 'break', time_from: timeFrom, time_to: timeTo }),
+    body: JSON.stringify({ type: 'break', date: dateStr, start_time: startTime, end_time: endTime }),
     credentials: 'same-origin',
   })
   if (!res.ok) {
