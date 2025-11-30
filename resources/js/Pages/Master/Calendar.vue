@@ -113,12 +113,23 @@
               </div>
               <div v-if="clientMode==='new' && form.value?.client_phone && !phoneValid" class="text-red-600 text-sm">Телефон: только цифры, 5–11 символов</div>
               <div v-if="voiceOpen" class="mt-3 space-y-2">
-                <textarea 
-                  v-model="voiceText" 
-                  rows="3" 
-                  class="block w-full rounded border px-3 py-2" 
-                  :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
-                />
+                <div class="relative">
+                  <textarea 
+                    v-model="voiceText" 
+                    rows="3" 
+                    class="block w-full rounded border px-3 py-2 pr-8" 
+                    :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
+                  />
+                  <button 
+                    v-if="voiceText" 
+                    type="button" 
+                    class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    @click="voiceText = ''"
+                    title="Очистить"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <div class="flex items-center gap-2">
                   <Button 
                     type="button" 
@@ -286,7 +297,8 @@ function startRecording() {
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript
-    voiceText.value = (voiceText.value ? voiceText.value + ' ' : '') + transcript
+    // Добавляем текст к уже существующему, а не затираем
+    voiceText.value = (voiceText.value ? voiceText.value.trim() + ' ' : '') + transcript
   }
 
   recognition.onerror = (event) => {
