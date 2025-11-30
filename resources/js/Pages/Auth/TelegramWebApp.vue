@@ -1,32 +1,16 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="max-w-md w-full bg-white border rounded-xl shadow-sm p-6">
-      <h1 class="text-xl font-semibold">Вход через Telegram WebApp</h1>
-      <p class="text-sm text-gray-600 mt-2">Авторизация без перезагрузки.</p>
-      <div class="mt-4 text-sm" :class="statusClass">{{ status }}</div>
-      <div class="mt-6 flex items-center justify-between" v-if="!choiceVisible">
-        <button class="inline-flex items-center rounded-lg bg-black text-white px-4 py-2" @click="tryAuth">Повторить</button>
-      </div>
-      <div class="mt-6 grid grid-cols-2 gap-3" v-else>
-        <button class="inline-flex items-center justify-center rounded-lg bg-black text-white px-4 py-2" @click="goMaster">Я мастер</button>
-        <button class="inline-flex items-center justify-center rounded-lg bg-gray-900 text-white px-4 py-2" @click="goClient">Я клиент</button>
-      </div>
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-4"></div>
+      <p class="text-sm text-gray-600">Загрузка...</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 
-const status = ref('Страница загружена')
-const choiceVisible = ref(false)
-const registerUrl = ref('/master/register')
-
-const statusClass = computed(() => {
-  if (status.value.startsWith('Ошибка')) return 'text-red-600'
-  if (status.value.startsWith('Успешно')) return 'text-green-600'
-  return 'text-gray-700'
-})
+const status = ref('Загрузка...')
 
 function injectTelegram() {
   return new Promise((resolve) => {
@@ -46,7 +30,11 @@ function sendStage(stage) {
 async function tryAuth() {
   sendStage('try-auth')
   const ok = await injectTelegram()
-  if (!ok) { status.value = 'Ошибка загрузки Telegram SDK'; sendStage('sdk-error'); return }
+  if (!ok) { 
+      // Если не удалось загрузить SDK, пробуем просто редиректнуть
+      window.location.href = '/master/calendar'
+      return 
+  }
 
   try { window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand?.() } catch (e) {}
 
@@ -56,7 +44,11 @@ async function tryAuth() {
     const fromQuery = q.get('initData')
     if (fromQuery) { initData = fromQuery; status.value = 'initData (mock) ok'; sendStage('init-mock') }
   }
-  if (!initData) { status.value = 'Нет initData'; sendStage('no-init'); return }
+  if (!initData) { 
+      // Нет данных initData - возможно открыто в браузере
+      window.location.href = '/login'
+      return 
+  }
   status.value = `initData ok (${initData.length})`
   sendStage('init-ok')
 
@@ -70,26 +62,12 @@ async function tryAuth() {
   if (!res.ok) {
     // Если пользователь не найден (404) или другая ошибка, но это WebApp - перенаправляем на регистрацию
     if (res.status === 404 || res.status === 401) {
-        // Здесь мы передаем initData через URL, чтобы форма регистрации сразу его подхватила
-        // и не требовала пароль, а сразу регистрировала через Telegram
-        // Важно: initData нужно закодировать
         window.location.href = '/master/register?initData=' + encodeURIComponent(initData)
         return
     }
 
-    let msg = 'Ошибка авторизации'
-    try {
-      const data = await res.json()
-      if (res.status === 403) {
-        const url = data?.register_url || '/master/register'
-        window.location.href = url
-        return
-      } else {
-        msg = data.message || msg
-      }
-    } catch (e) {}
-    status.value = msg
-    sendStage('auth-error-' + res.status)
+    // В случае любой другой ошибки пробуем редирект на логин
+    window.location.href = '/login'
     return
   }
   const data = await res.json().catch(() => ({}))
@@ -103,15 +81,9 @@ async function tryAuth() {
   window.location.href = dest
 }
 
-function goMaster() {
-  window.location.href = registerUrl.value
-}
-
-function goClient() {
-  window.location.href = '/book?webview=1'
-}
-
-onMounted(() => { status.value = 'Страница загружена'; sendStage('loaded'); tryAuth() })
+onMounted(() => {
+  tryAuth()
+})
 </script>
 
 <style scoped>

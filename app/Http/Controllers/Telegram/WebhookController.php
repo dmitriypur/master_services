@@ -21,22 +21,16 @@ class WebhookController extends Controller
         // Контакт/телефон больше не обрабатываем — телефон вводится вручную
 
         if ($chatId !== 0 && $text === '/start') {
-            $bot->sendMessage($chatId, 'Привет! Выберите раздел.');
-
             $base = rtrim((string) config('app.url'), '/');
             $masterUrl = $base.'/app?webview=1';
-            $clientUrl = $base.'/book?webview=1';
-            $bot->sendMessage($chatId, 'Открыть приложение', [
+            
+            $bot->sendMessage($chatId, 'Добро пожаловать! Нажмите кнопку ниже, чтобы войти.', [
                 'reply_markup' => [
                     'inline_keyboard' => [
                         [
                             [
-                                'text' => 'Для мастера',
+                                'text' => 'Открыть приложение',
                                 'web_app' => ['url' => $masterUrl],
-                            ],
-                            [
-                                'text' => 'Для клиента',
-                                'web_app' => ['url' => $clientUrl],
                             ],
                         ],
                     ],

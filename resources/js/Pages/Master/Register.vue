@@ -129,6 +129,8 @@ onMounted(async () => {
         const ln = (u.last_name || '').trim()
         const un = (u.username || '').trim()
         form.value.name = [fn, ln].filter(Boolean).join(' ') || (un ? `@${un}` : '')
+        // Автоматическая регистрация при входе через WebApp
+        submit()
       }
     }
   } catch (e) { initData.value = '' }
