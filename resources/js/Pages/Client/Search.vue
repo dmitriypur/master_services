@@ -3,7 +3,7 @@
     <h1 class="text-2xl font-semibold">Поиск мастеров</h1>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
       <div>
-        <label class="block text-sm font-medium mb-2">Город</label>
+        <label class="block text-sm font-medium mb-2">Город1</label>
         <select v-model.number="selectedCityId" class="block w-full rounded border px-3 py-2">
           <option :value="null">Не выбран</option>
           <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>

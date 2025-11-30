@@ -1,9 +1,19 @@
 <template>
-  <div class="max-w-3xl mx-auto py-4">
+  <div class="max-w-3xl mx-auto px-4 py-6">
+    <!-- Offline / Sync Status -->
+    <div v-if="!isOnline" class="mb-4 rounded-lg bg-amber-100 p-3 text-amber-800 text-sm flex items-center gap-2">
+       <span class="text-lg">⚠️</span>
+       <span>Отсутствует интернет. Вы можете создавать записи, они сохранятся локально.</span>
+    </div>
+    <div v-if="isOnline && appointmentQueue.length > 0" class="mb-4 rounded-lg bg-blue-100 p-3 text-blue-800 text-sm flex items-center gap-2">
+       <span v-if="isSyncing" class="animate-spin">↻</span>
+       <span v-else>ℹ️</span>
+       <span>Синхронизация {{ appointmentQueue.length }} записей...</span>
+    </div>
+
     <div class="mb-4 flex items-center gap-3">
-      <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Настройки</Link>
-      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-gray-900 text-white px-3 py-1.5">Клиенты</Link>
-      <span class="text-gray-500 text-sm">Календарь</span>
+      <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-green-500 text-white px-3 py-1.5">Настройки</Link>
+      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-sky-500 text-white px-3 py-1.5">Клиенты</Link>
     </div>
 
     <div class="mb-6">
@@ -24,14 +34,12 @@
         :format="'yyyy-MM-dd'"
       />
     </div>
-
+    <Button class="bg-indigo-600 inline-flex items-center gap-2 text-sm px-3 py-1.5 fixed bottom-4 left-4" @click="openGlobalVoiceModal">
+        <MicrophoneIcon class="size-5" />
+    </Button>
     <div>
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-medium">Слоты</h2>
-        <div class="flex items-center gap-3">
-          <Button class="bg-indigo-600 inline-flex items-center gap-2 text-sm px-3 py-1.5" @click="openGlobalVoiceModal">
-             <span>🎤 Голосовая запись</span>
-          </Button>
+      <div class="flex justify-between mb-3">
+        <div class="flex items-center justify-between w-full">
           <div class="text-sm text-gray-600">Дата: <span class="font-mono">{{ formatDateLocal(selectedDate) }}</span></div>
           <button v-if="!isDayOff" class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
           <button v-else class="inline-flex items-center rounded bg-green-700 text-white px-3 py-1.5" @click="cancelDayOff">Сделать рабочим</button>
@@ -71,17 +79,17 @@
 
     <Modal :open="showModal" @close="closeModal">
       <template #title>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 text-sm">
           <button type="button" :class="modalTab==='book' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='book'">Записать Клиента</button>
-          <span class="text-gray-400">•</span>
-          <button type="button" :class="modalTab==='break' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='break'">Установить Перерыв</button>
+          <span v-if="form.time" class="text-gray-400">•</span>
+          <button v-if="form.time" type="button" :class="modalTab==='break' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='break'">Установить Перерыв</button>
         </div>
       </template>
       <form v-if="modalTab==='book'" @submit.prevent="submitCreate" class="space-y-4">
-          <div class="text-sm text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
+          <div class="text-xs text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
           <div>
             <label class="block text-sm font-medium mb-2">Услуга</label>
-            <select v-model.number="form.service_id" class="block w-full rounded border px-3 py-2">
+            <select v-model.number="form.service_id" class="block w-full rounded border border-gray-300 px-3 py-2">
               <option :value="null">Выберите услугу</option>
               <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
@@ -97,7 +105,7 @@
                    v-model="form.client_name" 
                    type="text" 
                    placeholder="Имя клиента" 
-                   class="block w-full rounded border px-3 py-2" 
+                   class="block w-full rounded border border-gray-300 px-3 py-2" 
                  />
                </div>
                <div>
@@ -107,13 +115,13 @@
                    inputmode="numeric" 
                    maxlength="11" 
                    placeholder="Телефон (7999...)" 
-                   class="block w-full rounded border px-3 py-2" 
+                   class="block w-full rounded border border-gray-300 px-3 py-2" 
                    @input="onPhoneInput" 
                  />
                  <p class="text-xs text-gray-500 mt-1">Если клиент с таким номером есть, запись привяжется к нему.</p>
                </div>
                
-               <div class="text-sm border-t pt-2 mt-2">
+               <div class="text-sm border-t pt-2 mt-2 hidden">
                  <div class="mb-1 font-medium text-gray-700">Каналы связи</div>
                  <div class="flex items-center gap-3">
                    <label class="flex items-center gap-2"><input type="checkbox" value="phone" v-model="form.preferred_channels"> Звонок</label>
@@ -137,7 +145,7 @@
                   <textarea 
                     v-model="voiceText" 
                     rows="3" 
-                    class="block w-full rounded border px-3 py-2 pr-8" 
+                    class="block text-sm w-full rounded border border-gray-300 px-3 py-2 pr-8" 
                     :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
                   />
                   <button 
@@ -201,7 +209,7 @@
           </div>
       </form>
       <div v-else class="space-y-4">
-        <div class="text-sm text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
+        <div class="text-sm text-gray-700">Время2: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
         <div>
           <label class="block text-sm font-medium mb-2">Длительность перерыва</label>
           <select v-model.number="breakDurationMin" class="block w-full rounded border px-3 py-2">
@@ -247,13 +255,53 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { ru as ruLocale } from 'date-fns/locale'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { MicrophoneIcon } from '@heroicons/vue/24/solid'
 import Modal from '../../components/UI/Modal.vue'
 import Button from '../../components/UI/Button.vue'
 import MasterCrmNotes from './MasterCrmNotes.vue'
 import MasterLayout from '../../Layouts/MasterLayout.vue'
+import { useOfflineQueue } from '../../Composables/useOfflineQueue'
 
 const props = defineProps({ user: Object })
 defineOptions({ layout: MasterLayout })
+
+// --- Offline Queue Logic ---
+async function createAppointmentApi(payload) {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    const res = await apiFetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf,
+        },
+        body: JSON.stringify(payload),
+        credentials: 'same-origin',
+    })
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        const error = new Error(data.message || Object.values(data.errors || {})[0]?.[0] || 'Ошибка создания записи')
+        error.status = res.status
+        error.data = data
+        throw error
+    }
+    return res.json()
+}
+
+const { isOnline, queue: appointmentQueue, addToQueue: addAppointmentToQueue, isSyncing } = useOfflineQueue('offline_appointments', async (item) => {
+    const { _id, ...payload } = item
+    await createAppointmentApi(payload)
+    // После успешной синхронизации одной записи можно обновить слоты, но лучше сделать это один раз в конце.
+    // Но так как мы не знаем, когда конец, можно просто вызывать fetchSlots иногда.
+    // В данном случае просто оставим как есть.
+})
+
+// Следим за очередью: если она опустела (все синхронизировалось), обновляем слоты
+watch(() => appointmentQueue.value.length, (newLen, oldLen) => {
+    if (newLen === 0 && oldLen > 0) {
+        fetchSlots()
+    }
+})
+// ---------------------------
 
 function getAuthToken() {
   try { return localStorage.getItem('auth_token') || '' } catch (e) { return '' }
@@ -521,27 +569,22 @@ async function submitCreate() {
   payload.client_phone = form.value.client_phone
   payload.preferred_channels = form.value.preferred_channels
   
-  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await apiFetch('/api/appointments', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': csrf,
-    },
-    body: JSON.stringify(payload),
-    credentials: 'same-origin',
-  })
-  if (!res.ok) {
-    let msg = 'Ошибка создания записи'
-    try {
-      const data = await res.json()
-      msg = data.message || Object.values(data.errors || {})[0]?.[0] || msg
-    } catch (e) {}
-    errorMessage.value = msg
+  // OFFLINE CHECK
+  if (!isOnline.value) {
+    addAppointmentToQueue(payload)
+    closeModal()
+    // Можно показать уведомление (toast), но пока просто alert или ничего
+    alert('Нет интернета. Запись сохранена локально и будет отправлена при появлении сети.')
     return
   }
-  closeModal()
-  await fetchSlots()
+
+  try {
+    await createAppointmentApi(payload)
+    closeModal()
+    await fetchSlots()
+  } catch (e) {
+    errorMessage.value = e.message || 'Ошибка создания записи'
+  }
 }
 
 function addMinutesToTime(timeStr, minutes) {
