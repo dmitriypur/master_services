@@ -36,9 +36,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::put('/clients/{client}', [ClientController::class, 'update'])->whereNumber('client');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->whereNumber('client');
     Route::get('/appointments/at', [AppointmentController::class, 'showAt']);
-});
-
-Route::middleware(['auth:sanctum', CheckMasterTrialStatus::class])->group(function () {
+    
+    // Перенесли из sanctum в web+auth, чтобы работало в браузере
     Route::post('/master/schedule-exceptions', [MasterScheduleExceptionController::class, 'store']);
     Route::put('/master/schedule-exceptions/{exception}', [MasterScheduleExceptionController::class, 'update'])->whereNumber('exception');
     Route::patch('/master/schedule-exceptions/{exception}', [MasterScheduleExceptionController::class, 'update'])->whereNumber('exception');
@@ -46,4 +45,13 @@ Route::middleware(['auth:sanctum', CheckMasterTrialStatus::class])->group(functi
     Route::post('/master/parse-voice-command', [AIController::class, 'parse']);
     Route::get('/master/analytics/dashboard', [MasterAnalyticsController::class, 'dashboard']);
     Route::post('/master/appointment/{appointment}/notes', [MasterCrmController::class, 'storeNotes'])->whereNumber('appointment');
+});
+
+Route::middleware(['auth:sanctum', CheckMasterTrialStatus::class])->group(function () {
+    // Дублируем роуты для API доступа (мобилка/внешние сервисы), если они нужны отдельно под sanctum
+    // Но так как в вебе используется сессия, а в Telegram WebApp тоже часто сессия или токен,
+    // лучше унифицировать доступ.
+    // Пока оставим блок пустым или удалим, если все перенесено выше.
+    // Если нужно поддерживать И то И другое (токен И сессия), можно использовать middleware: ['auth:sanctum', 'auth:web']
+    // Но auth:sanctum обычно включает поддержку SPA (web stateful guard).
 });
