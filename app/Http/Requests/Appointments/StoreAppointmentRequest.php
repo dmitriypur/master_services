@@ -32,7 +32,7 @@ class StoreAppointmentRequest extends FormRequest
                 }
             })],
             'client_name' => ['required_without:client_id', 'string', 'max:255'],
-            'client_phone' => ['nullable', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
+            'client_phone' => ['required_without:client_id', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'preferred_channels' => ['nullable', 'array'],
             'preferred_channels.*' => ['string', Rule::in(['phone', 'telegram', 'whatsapp'])],
             'master_id' => $requiresMaster
@@ -55,6 +55,7 @@ class StoreAppointmentRequest extends FormRequest
             'client_id.integer' => 'Неверный клиент',
             'client_id.exists' => 'Клиент не найден',
             'client_name.required_without' => 'Укажите имя клиента',
+            'client_phone.required_without' => 'Укажите телефон',
             'client_phone.min' => 'Телефон: минимум 5 цифр',
             'client_phone.max' => 'Телефон: максимум 11 цифр',
             'client_phone.regex' => 'Телефон должен содержать только цифры',

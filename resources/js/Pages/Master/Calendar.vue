@@ -509,8 +509,12 @@ async function submitCreate() {
   const payload = { date: form.value.date, time: form.value.time, service_id: form.value.service_id }
   
   // Телефон теперь необязателен. Но если он введен, то валидируем длину.
+  if (!form.value.client_phone) {
+      errorMessage.value = 'Укажите телефон клиента';
+      return
+  }
   if (form.value.client_phone && !phoneValid.value) { 
-      errorMessage.value = 'Телефон: только цифры, 5–11 символов (или оставьте пустым)'; 
+      errorMessage.value = 'Телефон: только цифры, 5–11 символов'; 
       return 
   }
   payload.client_name = form.value.client_name
