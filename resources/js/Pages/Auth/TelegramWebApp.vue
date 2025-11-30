@@ -86,6 +86,10 @@ async function tryAuth() {
   const data = await res.json().catch(() => ({}))
   status.value = 'Успешно'
   sendStage('auth-ok')
+  try {
+    const t = data?.token || ''
+    if (t) { localStorage.setItem('auth_token', t) }
+  } catch (e) {}
   const dest = (data && data.redirect) ? data.redirect : '/master/calendar'
   window.location.href = dest
 }

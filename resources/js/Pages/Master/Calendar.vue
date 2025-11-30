@@ -159,6 +159,23 @@ import Button from '../../components/UI/Button.vue'
 
 const props = defineProps({ user: Object })
 
+function getAuthToken() {
+  try { return localStorage.getItem('auth_token') || '' } catch (e) { return '' }
+}
+
+function authHeaders(extra = {}) {
+  const t = getAuthToken()
+  const h = { 'X-Requested-With': 'XMLHttpRequest', ...extra }
+  if (t) h['Authorization'] = `Bearer ${t}`
+  return h
+}
+
+async function apiFetch(url, options = {}) {
+  const opts = { ...options }
+  opts.headers = authHeaders(opts.headers || {})
+  return fetch(url, opts)
+}
+
 const selectedDate = ref(new Date())
 const slots = ref([])
 const loading = ref(false)
@@ -198,7 +215,7 @@ async function fetchSlots() {
   loading.value = true
   try {
     const dateStr = formatDateLocal(selectedDate.value)
-    const res = await fetch(`/api/masters/${props.user.id}/slots?date=${encodeURIComponent(dateStr)}`)
+    const res = await apiFetch(`/api/masters/${props.user.id}/slots?date=${encodeURIComponent(dateStr)}`)
     const json = await res.json()
     slots.value = Array.isArray(json) ? json : (json.data ?? [])
   } finally {
@@ -211,8 +228,8 @@ watch(selectedDate, fetchSlots)
 
 async function fetchServicesAndClients() {
   const [sRes, cRes] = await Promise.all([
-    fetch(`/api/masters/${props.user.id}/services`, { credentials: 'same-origin' }),
-    fetch('/api/clients', { credentials: 'same-origin' }),
+    apiFetch(`/api/masters/${props.user.id}/services`, { credentials: 'same-origin' }),
+    apiFetch('/api/clients', { credentials: 'same-origin' }),
   ])
   services.value = (await sRes.json()).data ?? []
   clients.value = (await cRes.json()).data ?? []
@@ -249,12 +266,11 @@ async function submitCreate() {
     payload.preferred_channels = form.value.preferred_channels
   }
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch('/api/appointments', {
+  const res = await apiFetch('/api/appointments', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-TOKEN': csrf,
-      'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify(payload),
     credentials: 'same-origin',
@@ -286,9 +302,9 @@ async function submitBreak() {
   const timeFrom = `${dateStr} ${form.value.time}`
   const timeTo = `${dateStr} ${addMinutesToTime(form.value.time, breakDurationMin.value)}`
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch('/api/master/schedule-exceptions', {
+  const res = await apiFetch('/api/master/schedule-exceptions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
     body: JSON.stringify({ type: 'break', time_from: timeFrom, time_to: timeTo }),
     credentials: 'same-origin',
   })
@@ -303,9 +319,9 @@ async function submitBreak() {
 async function makeDayOff() {
   const dateStr = formatDateLocal(selectedDate.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch('/api/master/schedule-exceptions', {
+  const res = await apiFetch('/api/master/schedule-exceptions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
     body: JSON.stringify({ type: 'day_off', date: dateStr }),
     credentials: 'same-origin',
   })
@@ -320,9 +336,9 @@ async function parseVoice() {
   const text = voiceText.value.trim()
   if (!text) { voiceError.value = 'Введите или продиктуйте текст'; return }
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch('/api/master/parse-voice-command', {
+  const res = await apiFetch('/api/master/parse-voice-command', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
     body: JSON.stringify({ text }),
     credentials: 'same-origin',
   })
@@ -350,7 +366,7 @@ async function parseVoice() {
 async function openInfoModal(slot) {
   const dateStr = formatDateLocal(selectedDate.value)
   info.value = { id: null, date: dateStr, time: slot.time, client: null, service: null }
-  const res = await fetch(`/api/appointments/at?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(slot.time)}`, { credentials: 'same-origin' })
+  const res = await apiFetch(`/api/appointments/at?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(slot.time)}`, { credentials: 'same-origin' })
   if (res.ok) {
     const data = await res.json()
     const a = data.data ?? data
@@ -368,12 +384,11 @@ function closeInfo() {
 async function notifyClient() {
   if (!info.value.id) return
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch(`/api/appointments/${info.value.id}/notify`, {
+  const res = await apiFetch(`/api/appointments/${info.value.id}/notify`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-TOKEN': csrf,
-      'X-Requested-With': 'XMLHttpRequest',
     },
     credentials: 'same-origin',
   })
@@ -389,12 +404,11 @@ async function notifyClient() {
 async function cancelAppointment() {
   if (!info.value.id) return
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await fetch(`/api/appointments/${info.value.id}/cancel`, {
+  const res = await apiFetch(`/api/appointments/${info.value.id}/cancel`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-TOKEN': csrf,
-      'X-Requested-With': 'XMLHttpRequest',
     },
     credentials: 'same-origin',
   })
