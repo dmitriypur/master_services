@@ -112,7 +112,24 @@
               <div v-if="voiceOpen" class="mt-3 space-y-2">
                 <textarea v-model="voiceText" rows="3" class="block w-full rounded border px-3 py-2" placeholder="Продиктуйте или вставьте текст: например, 'Светлана, завтра в 14:30 маникюр, телефон 89991234567'" />
                 <div class="flex items-center gap-2">
-                  <Button class="bg-indigo-700" type="button" @click="parseVoice">Распознать</Button>
+                  <Button 
+                    type="button" 
+                    :class="isListening ? 'bg-red-600 animate-pulse' : 'bg-gray-600'" 
+                    @click="toggleRecording"
+                  >
+                    <span v-if="isListening">🛑 Стоп</span>
+                    <span v-else>🎤 Говорить</span>
+                  </Button>
+                  <Button 
+                    class="bg-indigo-700" 
+                    type="button" 
+                    @click="parseVoice"
+                    :disabled="isParsing"
+                    :class="{ 'opacity-75 cursor-not-allowed': isParsing }"
+                  >
+                    <span v-if="isParsing">⏳...</span>
+                    <span v-else>Распознать</span>
+                  </Button>
                   <div v-if="voiceError" class="text-red-600 text-sm">{{ voiceError }}</div>
                 </div>
               </div>
@@ -220,6 +237,65 @@ const breakDurationMin = ref(30)
 const voiceOpen = ref(false)
 const voiceText = ref('')
 const voiceError = ref('')
+const isListening = ref(false)
+const isParsing = ref(false)
+let recognition = null
+
+function toggleRecording() {
+  if (isListening.value) {
+    stopRecording()
+  } else {
+    startRecording()
+  }
+}
+
+function startRecording() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    alert('Ваш браузер не поддерживает голосовой ввод. Попробуйте Chrome или Safari.')
+    return
+  }
+
+  recognition = new SpeechRecognition()
+  recognition.lang = 'ru-RU'
+  recognition.continuous = false
+  recognition.interimResults = false
+
+  recognition.onstart = () => {
+    isListening.value = true
+    voiceError.value = ''
+  }
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    voiceText.value = (voiceText.value ? voiceText.value + ' ' : '') + transcript
+  }
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error', event.error)
+    if (event.error === 'not-allowed') {
+      voiceError.value = 'Доступ к микрофону запрещен.'
+    } else {
+      voiceError.value = 'Ошибка распознавания: ' + event.error
+    }
+    stopRecording()
+  }
+
+  recognition.onend = () => {
+    stopRecording()
+  }
+
+  recognition.start()
+}
+
+function stopRecording() {
+  isListening.value = false
+  if (recognition) {
+    recognition.stop()
+    recognition = null
+  }
+}
+
 const phoneValid = computed(() => {
   const len = (form.value.client_phone || '').length
   return clientMode.value === 'existing' ? true : (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
@@ -399,32 +475,50 @@ async function parseVoice() {
   voiceError.value = ''
   const text = voiceText.value.trim()
   if (!text) { voiceError.value = 'Введите или продиктуйте текст'; return }
-  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-  const res = await apiFetch('/api/master/parse-voice-command', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-    body: JSON.stringify({ text }),
-    credentials: 'same-origin',
-  })
-  if (!res.ok) {
-    try { const d = await res.json(); voiceError.value = d.message || 'Ошибка распознавания' } catch (e) { voiceError.value = 'Ошибка распознавания' }
-    return
+  
+  isParsing.value = true
+  try {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    const res = await apiFetch('/api/master/parse-voice-command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+      body: JSON.stringify({ text }),
+      credentials: 'same-origin',
+    })
+    
+    if (!res.ok) {
+      try { const d = await res.json(); voiceError.value = d.message || 'Ошибка распознавания' } catch (e) { voiceError.value = 'Ошибка распознавания' }
+      return
+    }
+
+    const data = await res.json().catch(() => ({}))
+    const r = data || {}
+    
+    let changed = false
+    if (r.client_name) { form.value.client_name = String(r.client_name); changed = true }
+    if (r.phone) { form.value.client_phone = String(r.phone).replace(/\D+/g, '').slice(0, MAX_PHONE_DIGITS); changed = true }
+    if (r.time) {
+      const t = String(r.time)
+      const m = t.match(/(\d{1,2}:\d{2})/)
+      if (m) { form.value.time = m[1]; changed = true }
+    }
+    if (r.service_name && Array.isArray(services.value)) {
+      const name = String(r.service_name).toLowerCase().trim()
+      const found = services.value.find((s) => String(s.name || '').toLowerCase().includes(name))
+      if (found) { form.value.service_id = found.id; changed = true }
+    }
+    
+    if (changed) {
+      clientMode.value = 'new'
+    } else {
+      voiceError.value = 'Не удалось найти данные (имя, телефон или время) в тексте.'
+    }
+  } catch (e) {
+    console.error(e)
+    voiceError.value = 'Ошибка сети или сервера'
+  } finally {
+    isParsing.value = false
   }
-  const data = await res.json().catch(() => ({}))
-  const r = data || {}
-  if (r.client_name) { form.value.client_name = String(r.client_name) }
-  if (r.phone) { form.value.client_phone = String(r.phone).replace(/\D+/g, '').slice(0, MAX_PHONE_DIGITS) }
-  if (r.time) {
-    const t = String(r.time)
-    const m = t.match(/(\d{1,2}:\d{2})/)
-    if (m) { form.value.time = m[1] }
-  }
-  if (r.service_name && Array.isArray(services.value)) {
-    const name = String(r.service_name).toLowerCase().trim()
-    const found = services.value.find((s) => String(s.name || '').toLowerCase().includes(name))
-    if (found) { form.value.service_id = found.id }
-  }
-  clientMode.value = 'new'
 }
 
 async function openInfoModal(slot) {
