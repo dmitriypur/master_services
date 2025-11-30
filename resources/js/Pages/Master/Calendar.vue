@@ -363,6 +363,9 @@ async function submitBreak() {
 }
 
 async function makeDayOff() {
+  // Use native confirm to debug interaction
+  if (!confirm('Сделать этот день выходным?')) return
+
   const dateStr = formatDateLocal(selectedDate.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   const res = await apiFetch('/api/master/schedule-exceptions', {
