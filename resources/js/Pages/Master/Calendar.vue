@@ -188,7 +188,9 @@ function getAuthToken() {
 function authHeaders(extra = {}) {
   const t = getAuthToken()
   const h = { 'X-Requested-With': 'XMLHttpRequest', ...extra }
-  if (t) h['Authorization'] = `Bearer ${t}`
+  if (t) {
+      h['Authorization'] = `Bearer ${t}`
+  }
   return h
 }
 
@@ -363,9 +365,6 @@ async function submitBreak() {
 }
 
 async function makeDayOff() {
-  // Use native confirm to debug interaction
-  if (!confirm('Сделать этот день выходным?')) return
-
   const dateStr = formatDateLocal(selectedDate.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   const res = await apiFetch('/api/master/schedule-exceptions', {
