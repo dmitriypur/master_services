@@ -221,7 +221,17 @@ function authHeaders(extra = {}) {
 
 async function apiFetch(url, options = {}) {
   const opts = { ...options }
+  // При использовании Sanctum с SPA (сессии), нужно убедиться, что мы отправляем credentials: 'same-origin' или 'include'
+  // И если мы используем токены, то добавляем заголовок Authorization.
+  
+  // Если мы используем токены (для мобилки или внешних клиентов):
   opts.headers = authHeaders(opts.headers || {})
+  
+  // Если мы в браузере и используем cookie-based сессии (Inertia):
+  if (!opts.headers['Authorization']) {
+      opts.credentials = 'include' // или 'same-origin', если на одном домене
+  }
+  
   return fetch(url, opts)
 }
 
@@ -513,11 +523,11 @@ async function parseVoice() {
   try {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     const res = await apiFetch('/api/master/parse-voice-command', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-      body: JSON.stringify({ text }),
-      credentials: 'same-origin',
-    })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+    body: JSON.stringify({ text }),
+    credentials: 'include', // Важно для сессий
+  })
     
     if (!res.ok) {
       try { const d = await res.json(); voiceError.value = d.message || 'Ошибка распознавания' } catch (e) { voiceError.value = 'Ошибка распознавания' }
@@ -545,6 +555,10 @@ async function parseVoice() {
              selectedDate.value = newDate // Переключаем календарь
              form.value.date = formatDateLocal(newDate) // Обновляем форму
              changed = true
+             
+             // ВАЖНО: Ждем загрузки слотов для новой даты!
+             // fetchSlots вызовется через watch(selectedDate), но нам нужно дождаться результата здесь.
+             await fetchSlots()
         }
     }
 
