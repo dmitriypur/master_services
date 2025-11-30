@@ -1,9 +1,11 @@
 <template>
-  <div v-if="open" class="fixed inset-0 z-50">
-    <div class="absolute inset-0 bg-black/40" @click="$emit('close')"></div>
-    <div class="relative mx-auto mt-24 w-full max-w-md px-4">
-      <div class="bg-white rounded-xl shadow-lg p-5">
-        <h3 v-if="$slots.title" class="text-lg font-semibold mb-4"><slot name="title" /></h3>
+  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div class="absolute inset-0 bg-black/50 transition-opacity" @click="$emit('close')"></div>
+    <div class="relative w-full max-w-md bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div v-if="$slots.title" class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900 leading-6"><slot name="title" /></h3>
+      </div>
+      <div class="p-5 overflow-y-auto overscroll-contain">
         <slot />
       </div>
     </div>
