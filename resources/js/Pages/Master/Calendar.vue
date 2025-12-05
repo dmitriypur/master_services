@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-6">
+  <div class="max-w-2xl mx-auto px-4 py-6">
     <!-- Offline / Sync Status -->
     <div v-if="!isOnline" class="mb-4 rounded-lg bg-amber-100 p-3 text-amber-800 text-sm flex items-center gap-2">
        <span class="text-lg">⚠️</span>

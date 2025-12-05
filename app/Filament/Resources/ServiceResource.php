@@ -40,13 +40,11 @@ class ServiceResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Название')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('parent.name')
+                    ->label('Родительская категория')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Создано')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Обновлено')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -76,9 +74,10 @@ class ServiceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListServices::route('/'),
+            'index' => Pages\ServiceTree::route('/'),
             'create' => Pages\CreateService::route('/create'),
             'edit' => Pages\EditService::route('/{record}/edit'),
+            'list-table' => Pages\ListServices::route('/list'),
         ];
     }
 }

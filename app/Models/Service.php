@@ -6,12 +6,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use SolutionForest\FilamentTree\Concern\ModelTree;
 
 class Service extends Model
 {
+    use ModelTree;
+
     protected $fillable = [
         'name',
+        'parent_id',
+        'order',
     ];
+
+    protected $casts = [
+        'parent_id' => 'integer',
+    ];
+
+    public function determineTitleColumnName(): string
+    {
+        return 'name';
+    }
 
     public function masters(): BelongsToMany
     {

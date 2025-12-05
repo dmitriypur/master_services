@@ -69,37 +69,8 @@
 
       <div>
         <label class="block text-sm font-medium mb-2">Услуги</label>
-        <div class="relative">
-          <button type="button" class="block w-full rounded border border-gray-300 px-3 py-2 text-left bg-white" @click="servicesOpen = !servicesOpen">
-            <span v-if="form.services.length === 0" class="text-gray-500">Выберите услуги</span>
-            <span v-else class="flex flex-wrap gap-2">
-              <span v-for="s in selectedServices" :key="s.id" class="inline-flex items-center gap-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 text-xs">
-                {{ s.name }}
-                <span class="cursor-pointer" @click.stop="removeService(s.id)">×</span>
-              </span>
-            </span>
-          </button>
-          <div v-if="servicesOpen" class="absolute z-10 mt-2 w-full rounded border border-gray-300 bg-white shadow">
-            <div class="p-2 border-b border-gray-300">
-              <input v-model="serviceQuery" type="text" placeholder="Поиск" class="block w-full rounded border border-gray-300 px-2 py-1" />
-            </div>
-            <div class="max-h-56 overflow-auto">
-              <button
-                v-for="s in filteredServices"
-                :key="s.id"
-                type="button"
-                class="flex w-full items-center justify-between px-3 py-2 hover:bg-gray-50"
-                @click="toggleService(s.id)"
-              >
-                <span>{{ s.name }}</span>
-                <input type="checkbox" :checked="form.services.includes(s.id)" readonly />
-              </button>
-            </div>
-            <div class="p-2 border-t border-gray-300 text-right">
-              <button type="button" class="inline-flex items-center rounded bg-indigo-700 text-white px-3 py-1.5" @click="servicesOpen=false">Готово</button>
-            </div>
-          </div>
-        </div>
+        <!-- Новый каскадный селект -->
+        <CascadingServiceSelect v-model="form.services" />
         <p v-if="form.errors.services" class="text-red-600 text-sm mt-1">{{ form.errors.services }}</p>
       </div>
 
@@ -114,6 +85,8 @@
 import { Link } from '@inertiajs/vue3'
 import { useForm } from '@inertiajs/vue3'
 import MasterLayout from '../../Layouts/MasterLayout.vue'
+import CascadingServiceSelect from '../../components/UI/CascadingServiceSelect.vue'
+
 const props = defineProps({ user: Object, cities: Array, settings: Object, servicesOptions: Array, selectedServiceIds: Array })
 defineOptions({ layout: MasterLayout })
 
@@ -145,33 +118,6 @@ function toggleDay(key) {
   } else {
     form.work_days.push(key)
   }
-}
-
-const serviceReduce = (s) => s.id
-
-import { ref, computed } from 'vue'
-const servicesOpen = ref(false)
-const serviceQuery = ref('')
-const filteredServices = computed(() => {
-  const q = serviceQuery.value.trim().toLowerCase()
-  if (!q) return props.servicesOptions || []
-  return (props.servicesOptions || []).filter(s => String(s.name || '').toLowerCase().includes(q))
-})
-const selectedServices = computed(() => {
-  const ids = new Set(form.services)
-  return (props.servicesOptions || []).filter(s => ids.has(s.id))
-})
-function toggleService(id) {
-  const i = form.services.indexOf(id)
-  if (i >= 0) {
-    form.services.splice(i, 1)
-  } else {
-    form.services.push(id)
-  }
-}
-function removeService(id) {
-  const i = form.services.indexOf(id)
-  if (i >= 0) form.services.splice(i, 1)
 }
 
 function submit() {

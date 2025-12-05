@@ -1,5 +1,5 @@
 <template>
-  <div class="py-6 px-4">
+  <div class="max-w-2xl mx-auto px-4 py-6">
     <div class="mb-4 flex items-center gap-3">
       <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-green-500 text-white px-3 py-1.5">Настройки</Link>
       <Link href="/master/calendar" class="inline-flex text-sm items-center rounded bg-sky-500 text-white px-3 py-1.5">Календарь</Link>
@@ -8,7 +8,7 @@
     <div class="mt-4 flex flex-col gap-2">
       <input v-model="createForm.name" placeholder="Имя" class="border rounded p-2" />
       <input v-model="createForm.phone" placeholder="Телефон" class="border rounded p-2" />
-      <button class="bg-black text-white px-4 py-2 rounded" @click="createClient">Добавить</button>
+      <button class="bg-indigo-700 text-white px-4 py-2 rounded" @click="createClient">Добавить</button>
     </div>
     <div class="mt-6">
       <table class="min-w-full text-sm">
