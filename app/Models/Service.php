@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use SolutionForest\FilamentTree\Concern\ModelTree;
 
 class Service extends Model
@@ -25,6 +27,16 @@ class Service extends Model
     public function determineTitleColumnName(): string
     {
         return 'name';
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Service::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(Service::class, 'parent_id');
     }
 
     public function masters(): BelongsToMany

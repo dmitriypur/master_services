@@ -13,6 +13,7 @@
   - Мастер: WebApp авторизация (подпись initData), календарь/настройки
     - `app/Http/Controllers/Auth/AuthTelegramController.php:17`
     - `app/Http/Controllers/Master/CalendarController.php:9`
+    - Если мастер не найден: `404`, фронт редиректит на `'/master/register?initData=…'` (`resources/js/Pages/Auth/TelegramWebApp.vue:62–66`)
   - Клиент: бронирование/календарь мастера
     - `app/Http/Controllers/Client/BookingController.php:9`
     - `app/Http/Controllers/Client/MasterCalendarController.php:9`
@@ -23,4 +24,3 @@
     - `app/Console/Commands/SendClientReminders.php:1`
     - `app/Jobs/SendTelegramReminderToMaster.php:18`
     - `app/Jobs/SendTelegramReminderToClient.php:18`
-

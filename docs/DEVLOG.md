@@ -12,8 +12,8 @@
 ## Потоки входа
 - Бот → «Для мастера» ведёт на `'/app?webview=1'`.
 - WebApp авторизация:
-  - Если мастер существует по `telegram_id`: редирект на `'/master/calendar'` (`app/Http/Controllers/Auth/AuthTelegramController.php:56`).
-  - Если нет: 403 + `register_url`, фронт сразу редиректит на форму регистрации (`resources/js/Pages/Auth/TelegramWebApp.vue:70–90`).
+15→  - Если мастер существует по `telegram_id`: редирект на `'/master/calendar'` (`app/Http/Controllers/Auth/AuthTelegramController.php:50`).
+16→  - Если нет: `404`, фронт редиректит на форму регистрации `'/master/register?initData=…'` (`resources/js/Pages/Auth/TelegramWebApp.vue:62–66`).
 
 ## Регистрация мастера
 - Бэкенд: создаёт пользователя с `name`, `city_id`, `phone`, роль `master`, и активирует выбранные услуги.
@@ -63,4 +63,3 @@
 - Добавить подсказки/маску ввода телефона (+7/8), если потребуется.
 - Толще валидация услуг и UX‑улучшения в регистрации (индикаторы, ошибки по полям).
 - Страница «Клиенты» — расширить действия (поиск, фильтры, импорт/экспорт).
-

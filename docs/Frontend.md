@@ -10,9 +10,10 @@
   - Клиент — Календарь мастера: `resources/js/Pages/Client/MasterCalendar.vue`
     - Создание записи от клиента (payload включает `master_id`, `service_id`, контакт)
   - Авторизация WebApp: `resources/js/Pages/Auth/TelegramWebApp.vue`
-    - Отправка initData → `/auth/telegram/webapp`, редирект на `'/master/calendar'` или `'/master/settings'`
+    - Отправка initData → `/auth/telegram/webapp`.
+    - Если ответ `200` → редирект на `'/master/calendar'` или `'/master/settings'`.
+    - Если ответ `404/401` → фронт редиректит на `'/master/register?initData=…'` (`resources/js/Pages/Auth/TelegramWebApp.vue:62–66`).
 
 - Ключевая логика:
   - Валидация форм на клиенте, нормализация телефона, выбор услуги/клиента
   - Взаимодействие с CSRF и Inertia
-
