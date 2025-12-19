@@ -12,10 +12,19 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 
-const props = defineProps({ appointmentId: { type: [String, Number], required: true } })
-const notes = ref('')
+const props = defineProps({ 
+  appointmentId: { type: [String, Number], required: true },
+  initialNotes: { type: String, default: '' }
+})
+const notes = ref(props.initialNotes)
+console.log('MasterCrmNotes mounted, initialNotes:', props.initialNotes)
 const error = ref('')
 const saving = ref(false)
+
+watch(() => props.initialNotes, (newVal) => {
+  console.log('MasterCrmNotes initialNotes changed:', newVal)
+  notes.value = newVal || ''
+})
 
 function getAuthToken() {
   try { return localStorage.getItem('auth_token') || '' } catch (e) { return '' }
@@ -28,15 +37,7 @@ function authHeaders(extra = {}) {
 }
 
 async function load() {
-  error.value = ''
-  if (!props.appointmentId) return
-  try {
-    const res = await fetch(`/api/appointments/${props.appointmentId}`, { headers: authHeaders(), credentials: 'same-origin' })
-    if (!res.ok) return
-    const data = await res.json().catch(() => ({}))
-    const a = data?.data ?? data
-    notes.value = String(a?.private_notes || '')
-  } catch (e) {}
+  // Загрузка теперь происходит через props.initialNotes из родительского компонента
 }
 
 async function save() {

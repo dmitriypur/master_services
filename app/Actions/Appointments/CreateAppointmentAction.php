@@ -26,7 +26,7 @@ class CreateAppointmentAction
         if (! empty($data['master_id'])) {
             $master = User::query()
                 ->where('id', (int) $data['master_id'])
-                ->where('role', 'master')
+                ->whereIn('role', ['master', 'superadmin'])
                 ->firstOrFail();
         } else {
             $userId = Auth::id();
@@ -37,7 +37,7 @@ class CreateAppointmentAction
             }
             $master = User::query()
                 ->where('id', $userId)
-                ->where('role', 'master')
+                ->whereIn('role', ['master', 'superadmin'])
                 ->firstOrFail();
         }
 

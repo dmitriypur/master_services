@@ -18,8 +18,8 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->user();
-        // Если пользователь не авторизован или не мастер, master_id обязателен
-        $requiresMaster = $user === null || $user->role !== 'master';
+        // Если пользователь не авторизован или не мастер (и не суперадмин), master_id обязателен
+        $requiresMaster = $user === null || ! in_array($user->role, ['master', 'superadmin'], true);
 
         return [
             'date' => ['required', 'date_format:Y-m-d'],
@@ -36,8 +36,8 @@ class StoreAppointmentRequest extends FormRequest
             'preferred_channels' => ['nullable', 'array'],
             'preferred_channels.*' => ['string', Rule::in(['phone', 'telegram', 'whatsapp'])],
             'master_id' => $requiresMaster
-                ? ['required', 'integer', Rule::exists('users', 'id')->where('role', 'master')]
-                : ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'master')],
+                ? ['required', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['master', 'superadmin']))]
+                : ['nullable', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['master', 'superadmin']))],
             'source' => ['nullable', Rule::in(['manual', 'client'])],
         ];
     }

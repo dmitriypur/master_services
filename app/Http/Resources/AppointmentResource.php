@@ -32,6 +32,7 @@ class AppointmentResource extends JsonResource
                     'name' => $this->service->name,
                 ];
             }),
+            'private_notes' => $this->private_notes,
         ];
     }
 }

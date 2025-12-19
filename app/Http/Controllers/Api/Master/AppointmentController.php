@@ -12,6 +12,7 @@ use App\Models\Appointment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends Controller
@@ -46,6 +47,12 @@ class AppointmentController extends Controller
             ->where('ends_at', '>', $slotStart)
             ->with(['client', 'service'])
             ->firstOrFail();
+
+        \Log::info('showAt appointment found', [
+            'id' => $appointment->id,
+            'private_notes' => $appointment->private_notes,
+            'toArray' => $appointment->toArray(),
+        ]);
 
         return new AppointmentResource($appointment);
     }

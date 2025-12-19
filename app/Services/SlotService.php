@@ -9,6 +9,7 @@ use App\Models\MasterScheduleException;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SlotService
 {
@@ -37,19 +38,22 @@ class SlotService
         $override = $exceptions->firstWhere('type', 'override');
 
         $workDays = (array) ($settings->work_days ?? []);
-        $dayCode = match ($date->dayOfWeekIso) {
-            1 => 'mon',
-            2 => 'tue',
-            3 => 'wed',
-            4 => 'thu',
-            5 => 'fri',
-            6 => 'sat',
-            7 => 'sun',
-        };
+        $dayCode = $date->dayOfWeekIso; // 1 (Mon) - 7 (Sun)
 
         $timeFrom = $override?->start_time ?? $settings->work_time_from;
         $timeTo = $override?->end_time ?? $settings->work_time_to;
         $duration = (int) ($settings->slot_duration_min ?? 0);
+
+        Log::info('SlotService:getSlotsForDate', [
+            'user_id' => $master->id,
+            'date' => $date->toDateString(),
+            'day_code' => $dayCode,
+            'work_days' => $workDays,
+            'in_array' => in_array($dayCode, $workDays, true),
+            'time_from' => $timeFrom,
+            'time_to' => $timeTo,
+            'duration' => $duration,
+        ]);
 
         if (! $override && ! in_array($dayCode, $workDays, true)) {
             return [];
@@ -165,15 +169,7 @@ class SlotService
         $override = $exceptions->firstWhere('type', 'override');
 
         $workDays = (array) ($settings->work_days ?? []);
-        $dayCode = match ($startsAt->dayOfWeekIso) {
-            1 => 'mon',
-            2 => 'tue',
-            3 => 'wed',
-            4 => 'thu',
-            5 => 'fri',
-            6 => 'sat',
-            7 => 'sun',
-        };
+        $dayCode = $startsAt->dayOfWeekIso;
 
         $timeFrom = $override?->start_time ?? $settings->work_time_from;
         $timeTo = $override?->end_time ?? $settings->work_time_to;

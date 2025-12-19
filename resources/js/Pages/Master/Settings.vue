@@ -66,7 +66,7 @@
     </Card>
 
     <!-- Плавающая панель навигации внизу -->
-    <div class="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10" v-if="user?.is_active && !form.isDirty">
+    <div class="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10" v-if="user?.is_active">
        <Link href="/master/calendar">
          <Button label="В календарь" icon="pi pi-calendar" severity="success" raised rounded />
        </Link>

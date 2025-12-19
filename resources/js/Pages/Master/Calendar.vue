@@ -1,20 +1,12 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-6">
+  <div class="max-w-2xl mx-auto px-4 py-6 space-y-4 pb-20">
     <!-- Offline / Sync Status -->
-    <div v-if="!isOnline" class="mb-4 rounded-lg bg-amber-100 p-3 text-amber-800 text-sm flex items-center gap-2">
-       <span class="text-lg">⚠️</span>
-       <span>Отсутствует интернет. Вы можете создавать записи, они сохранятся локально.</span>
-    </div>
-    <div v-if="isOnline && appointmentQueue.length > 0" class="mb-4 rounded-lg bg-blue-100 p-3 text-blue-800 text-sm flex items-center gap-2">
-       <span v-if="isSyncing" class="animate-spin">↻</span>
-       <span v-else>ℹ️</span>
-       <span>Синхронизация {{ appointmentQueue.length }} записей...</span>
-    </div>
-
-    <div class="mb-4 flex items-center gap-3">
-      <Link href="/master/settings" class="inline-flex text-sm items-center rounded bg-green-500 text-white px-3 py-1.5">Настройки</Link>
-      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-sky-500 text-white px-3 py-1.5">Клиенты</Link>
-    </div>
+    <Message v-if="!isOnline" severity="warn" icon="pi pi-exclamation-triangle" :closable="false">
+       Отсутствует интернет. Вы можете создавать записи, они сохранятся локально.
+    </Message>
+    <Message v-if="isOnline && appointmentQueue.length > 0" severity="info" icon="pi pi-sync" :closable="false">
+       Синхронизация {{ appointmentQueue.length }} записей...
+    </Message>
 
     <div class="mb-6">
       <VueDatePicker
@@ -34,197 +26,216 @@
         :format="'yyyy-MM-dd'"
       />
     </div>
-    <Button class="bg-indigo-600 inline-flex items-center gap-2 text-sm px-3 py-1.5 fixed bottom-4 left-4" @click="openGlobalVoiceModal">
-        <MicrophoneIcon class="size-5" />
-    </Button>
-    <div>
-      <div class="flex justify-between mb-3">
-        <div class="flex items-center justify-between w-full">
-          <div class="text-sm text-gray-600">Дата: <span class="font-mono">{{ formatDateLocal(selectedDate) }}</span></div>
-          <button v-if="!isDayOff" class="inline-flex items-center rounded bg-red-700 text-white px-3 py-1.5" @click="makeDayOff">Сделать выходным</button>
-          <button v-else class="inline-flex items-center rounded bg-green-700 text-white px-3 py-1.5" @click="cancelDayOff">Сделать рабочим</button>
-        </div>
-      </div>
-      <div v-if="loading" class="text-gray-500">Загрузка…</div>
-      <div v-else>
-        <div v-if="isDayOff" class="text-gray-500">Выходной день</div>
-        <div v-else-if="slots.length === 0" class="text-gray-500">Нет слотов на выбранную дату</div>
-        <div v-else class="grid grid-cols-2 gap-3">
-          <div
-            v-for="s in slots"
-            :key="s.starts_at"
-            class="border border-gray-300 rounded-lg p-3 flex flex-col gap-2 cursor-pointer"
-            :class="{ 'opacity-60 cursor-default': s.is_past && s.available }"
-            @click="handleClick(s)"
-          >
-            <div class="font-mono text-sm">{{ s.time }}</div>
-            <div class="flex items-center justify-between">
-              <!-- Прошедшие слоты -->
-              <template v-if="s.is_past">
-                 <span v-if="s.available" class="text-gray-500">нет записи</span>
-                 <span v-else class="text-red-600">занят</span>
-              </template>
-              <!-- Будущие слоты -->
-              <template v-else>
-                 <span :class="s.available ? 'text-green-600' : 'text-red-600'">{{ s.available ? 'свободен' : 'занят' }}</span>
-              </template>
-              
-              <span v-if="!s.is_past" class="ml-2 text-xs text-gray-500">{{ s.available ? 'создать' : 'посмотреть' }}</span>
-              <span v-else-if="!s.available" class="ml-2 text-xs text-gray-500">посмотреть</span>
+    
+    <Button 
+        rounded 
+        hidden
+        icon="pi pi-microphone" 
+        severity="help" 
+        class="fixed bottom-20 left-4 shadow-lg z-50 !w-12 !h-12" 
+        @click="openGlobalVoiceModal" 
+    />
+
+    <Card class="mb-20">
+        <template #content>
+            <div class="flex justify-between items-center mb-4">
+                <div class="text-lg font-medium text-gray-700">
+                    <span class="font-bold">{{ formatDateLocal(selectedDate) }}</span>
+                </div>
+                <Button 
+                    v-if="!isDayOff" 
+                    label="Сделать выходным" 
+                    severity="danger" 
+                    size="small" 
+                    outlined 
+                    @click="makeDayOff" 
+                />
+                <Button 
+                    v-else 
+                    label="Сделать рабочим" 
+                    severity="success" 
+                    size="small" 
+                    outlined 
+                    @click="cancelDayOff" 
+                />
             </div>
-          </div>
-        </div>
-      </div>
+
+            <div v-if="loading" class="flex justify-center py-8">
+                <i class="pi pi-spin pi-spinner text-4xl text-gray-400"></i>
+            </div>
+            
+            <div v-else>
+                <!-- Debug info -->
+                <div class="text-xs text-red-500 mb-2 p-2 bg-red-50 rounded">
+                    Debug: User ID: {{ user?.id }}, Active: {{ user?.is_active }}, Slots: {{ slots.length }}<br>
+                    Error: {{ fetchError }}
+                </div>
+                <div v-if="isDayOff" class="text-center py-8 text-gray-500">
+                    <i class="pi pi-calendar-times text-4xl mb-2 block"></i>
+                    Выходной день
+                </div>
+                <div v-else-if="slots.length === 0" class="text-center py-8 text-gray-500">
+                    Нет слотов на выбранную дату. <br>
+                    <small>Проверьте настройки графика.</small>
+                </div>
+                <div v-else class="grid grid-cols-2 gap-3">
+                    <div
+                        v-for="s in slots"
+                        :key="s.starts_at"
+                        class="border rounded-lg p-3 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md"
+                        :class="[
+                            s.is_past && s.available ? 'opacity-60 bg-gray-50 cursor-default' : 'bg-white border-gray-200',
+                            !s.available && !s.is_past ? 'border-l-4 border-l-red-500' : '',
+                            s.available && !s.is_past ? 'border-l-4 border-l-green-500' : ''
+                        ]"
+                        @click="handleClick(s)"
+                    >
+                        <div class="font-bold text-lg text-gray-800">{{ s.time }}</div>
+                        <div class="flex items-center justify-between text-sm">
+                            <!-- Прошедшие слоты -->
+                            <template v-if="s.is_past">
+                                <span v-if="s.available" class="text-gray-400">Прошел</span>
+                                <span v-else class="text-red-600 font-medium">Занят</span>
+                            </template>
+                            <!-- Будущие слоты -->
+                            <template v-else>
+                                <span :class="s.available ? 'text-green-600' : 'text-red-600 font-medium'">
+                                    {{ s.available ? 'Свободен' : 'Занят' }}
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </Card>
+
+    <!-- Плавающая панель навигации внизу -->
+    <div class="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
+       <Link href="/master/settings">
+         <Button label="Настройки" icon="pi pi-cog" severity="success" raised rounded />
+       </Link>
+       <Link href="/master/clients">
+         <Button label="Клиенты" icon="pi pi-users" severity="info" raised rounded />
+       </Link>
     </div>
 
-    <Modal :open="showModal" @close="closeModal">
-      <template #title>
-        <div class="flex items-center gap-3 text-sm">
-          <button type="button" :class="modalTab==='book' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='book'">Записать Клиента</button>
-          <span v-if="form.time" class="text-gray-400">•</span>
-          <button v-if="form.time" type="button" :class="modalTab==='break' ? 'font-semibold' : 'text-gray-500'" @click="modalTab='break'">Установить Перерыв</button>
-        </div>
-      </template>
-      <form v-if="modalTab==='book'" @submit.prevent="submitCreate" class="space-y-4">
-          <div class="text-xs text-gray-700">Время: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Услуга</label>
-            <select v-model.number="form.service_id" class="block w-full rounded border border-gray-300 px-3 py-2">
-              <option :value="null">Выберите услугу</option>
-              <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
-          </div>
+    <Dialog v-model:visible="showModal" modal header="Запись" :style="{ width: '90vw', maxWidth: '500px' }" @hide="closeModal">
+      <Tabs value="book">
+        <TabList>
+            <Tab value="book" @click="modalTab='book'">Записать Клиента</Tab>
+            <Tab value="break" @click="modalTab='break'" :disabled="!form.time">Перерыв</Tab>
+        </TabList>
+        <TabPanels>
+            <TabPanel value="book">
+                <form @submit.prevent="submitCreate" class="flex flex-col gap-4 pt-2">
+                    <div class="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                        <span>Дата: <span class="font-bold">{{ form.date }}</span></span>
+                        <span>Время: <span class="font-bold">{{ form.time }}</span></span>
+                    </div>
 
-          <div>
-            <label class="block text-sm font-medium mb-2">Клиент</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="font-medium">Услуга</label>
+                        <Select 
+                            v-model="form.service_id" 
+                            :options="services" 
+                            optionLabel="name" 
+                            optionValue="id" 
+                            placeholder="Выберите услугу" 
+                            class="w-full"
+                        />
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="font-medium">Клиент</label>
+                        <div class="space-y-3">
+                            <InputText 
+                                v-model="form.client_name" 
+                                placeholder="Имя клиента" 
+                                class="w-full"
+                            />
+                            <div class="flex flex-col gap-1">
+                                <InputMask 
+                                    v-model="form.client_phone" 
+                                    mask="89999999999" 
+                                    placeholder="89990000000" 
+                                    class="w-full"
+                                    @input="onPhoneInput" 
+                                />
+                                <small class="text-gray-500">Если клиент новый, он будет создан автоматически.</small>
+                                <small v-if="form.client_phone && !phoneValid" class="text-red-500">Неверный формат телефона</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Голосовой ввод внутри модалки -->
+                    <div class="border-t pt-3 mt-1">
+                        <Button 
+                            type="button" 
+                            :label="voiceOpen ? 'Скрыть голосовой ввод' : 'Микрофон'" 
+                            :icon="voiceOpen ? 'pi pi-chevron-up' : 'pi pi-microphone'"
+                            text 
+                            size="small"
+                            @click="voiceOpen = !voiceOpen" 
+                        />
+                        
+                        <div v-if="voiceOpen" class="mt-2 space-y-2">
+                            <div class="relative">
+                                <Textarea 
+                                    v-model="voiceText" 
+                                    rows="3" 
+                                    class="w-full text-sm"
+                                    placeholder="Диктуйте имя и телефон..." 
+                                />
+                                <button 
+                                    v-if="voiceText" 
+                                    type="button" 
+                                    class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                    @click="voiceText = ''"
+                                >
+                                    <i class="pi pi-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <Button 
+                                    type="button" 
+                                    :severity="isListening ? 'danger' : ''"
+                                    :label="isListening ? 'Стоп' : 'Говорить'"
+                                    :icon="isListening ? 'pi pi-stop-circle' : 'pi pi-microphone'"
+                                    size="small"
+                                    @click="toggleRecording"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <Button type="submit" label="Создать запись" icon="pi pi-check" class="w-full" />
+                    </div>
+                </form>
+            </TabPanel>
             
-            <!-- Упрощенная форма клиента -->
-            <div class="space-y-3">
-               <div>
-                 <input 
-                   v-model="form.client_name" 
-                   type="text" 
-                   placeholder="Имя клиента" 
-                   class="block w-full rounded border border-gray-300 px-3 py-2" 
-                 />
-               </div>
-               <div>
-                 <input 
-                   v-model="form.client_phone" 
-                   type="tel" 
-                   inputmode="numeric" 
-                   maxlength="11" 
-                   placeholder="Телефон (7999...)" 
-                   class="block w-full rounded border border-gray-300 px-3 py-2" 
-                   @input="onPhoneInput" 
-                 />
-                 <p class="text-xs text-gray-500 mt-1">Если клиент с таким номером есть, запись привяжется к нему.</p>
-               </div>
-               
-               <div class="text-sm border-t pt-2 mt-2 hidden">
-                 <div class="mb-1 font-medium text-gray-700">Каналы связи</div>
-                 <div class="flex items-center gap-3">
-                   <label class="flex items-center gap-2"><input type="checkbox" value="phone" v-model="form.preferred_channels"> Звонок</label>
-                   <label class="flex items-center gap-2"><input type="checkbox" value="telegram" v-model="form.preferred_channels"> Telegram</label>
-                   <label class="flex items-center gap-2"><input type="checkbox" value="whatsapp" v-model="form.preferred_channels"> WhatsApp</label>
-                 </div>
-               </div>
-            </div>
-            
-            <div v-if="form.client_phone && !phoneValid" class="text-red-600 text-sm mt-1">Телефон: только цифры, 5–11 символов</div>
-            
-            <!-- Кнопка голосового ввода -->
-            <div class="mt-3">
-              <button type="button" class="text-sm text-indigo-600 hover:underline" @click="voiceOpen = !voiceOpen">
-                {{ voiceOpen ? 'Скрыть голосовой ввод' : '🎤 Открыть голосовой ввод' }}
-              </button>
-            </div>
-
-            <div v-if="voiceOpen" class="mt-2 space-y-2">
-                <div class="relative">
-                  <textarea 
-                    v-model="voiceText" 
-                    rows="3" 
-                    class="block text-sm w-full rounded border border-gray-300 px-3 py-2 pr-8" 
-                    :placeholder="form.time ? 'Диктуйте данные клиента и услугу (время уже выбрано)' : 'Диктуйте данные: время, имя, телефон, услугу'" 
-                  />
-                  <button 
-                     v-if="voiceText" 
-                     type="button" 
-                     class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 z-20"
-                     @click="voiceText = ''"
-                     title="Очистить"
-                   >
-                     ✕
-                   </button>
-                </div>
-                
-                <!-- Подсветка распознанного текста -->
-                <div v-if="voiceText" class="p-2 bg-gray-50 rounded border border-gray-200 text-sm" v-html="highlightText(voiceText)"></div>
-                <div class="flex items-center gap-2">
-                  <Button 
-                    type="button" 
-                    :class="isListening ? 'bg-red-600 animate-pulse' : 'bg-gray-600'" 
-                    @click="toggleRecording"
-                  >
-                    <span v-if="isListening">🛑 Стоп</span>
-                    <span v-else>🎤 Говорить</span>
-                  </Button>
-                  <Button 
-                    class="bg-indigo-700" 
-                    type="button" 
-                    @click="parseVoice"
-                    :disabled="isParsing"
-                    :class="{ 'opacity-75 cursor-not-allowed': isParsing }"
-                  >
-                    <span v-if="isParsing">⏳...</span>
-                    <span v-else>Распознать</span>
-                  </Button>
-                  <div v-if="voiceError" class="text-red-600 text-sm">
-                      <div>{{ voiceError }}</div>
-                      <div v-if="suggestedSlots.length > 0" class="mt-2">
-                          <div class="text-gray-600 mb-1">Свободное время рядом:</div>
-                          <div class="flex gap-2">
-                              <button 
-                                v-for="slot in suggestedSlots" 
-                                :key="slot.time"
-                                type="button"
-                                class="px-2 py-1 bg-green-100 text-green-800 rounded border border-green-200 text-xs hover:bg-green-200"
-                                @click="selectSuggestedSlot(slot.time)"
-                              >
-                                {{ slot.time }}
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          <div v-if="errorMessage" class="text-red-600 text-sm">{{ errorMessage }}</div>
-
-          <div class="flex items-center justify-end gap-3">
-            <Button class="bg-red-700" type="button" @click="closeModal">Отмена</Button>
-            <Button class="bg-indigo-700" type="submit">Создать</Button>
-          </div>
-      </form>
-      <div v-else class="space-y-4">
-        <div class="text-sm text-gray-700">Время2: <span class="font-mono">{{ form.time }}</span> | Дата: <span class="font-mono">{{ form.date }}</span></div>
-        <div>
-          <label class="block text-sm font-medium mb-2">Длительность перерыва</label>
-          <select v-model.number="breakDurationMin" class="block w-full rounded border px-3 py-2">
-            <option :value="15">15 мин</option>
-            <option :value="30">30 мин</option>
-            <option :value="45">45 мин</option>
-            <option :value="60">60 мин</option>
-          </select>
-        </div>
-        <div class="flex items-center justify-end gap-3">
-          <Button class="bg-red-700" type="button" @click="closeModal">Отмена</Button>
-          <Button class="bg-amber-600" type="button" @click="submitBreak">Установить</Button>
-        </div>
-      </div>
-    </Modal>
+            <TabPanel value="break">
+                <form @submit.prevent="submitBreak" class="flex flex-col gap-4 pt-2">
+                    <div class="text-sm bg-gray-50 p-2 rounded text-center">
+                        Блокировка времени <span class="font-bold">{{ form.time }}</span>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="font-medium">Длительность (мин)</label>
+                        <Select 
+                            v-model="breakDuration" 
+                            :options="[15, 30, 45, 60, 90, 120]" 
+                            placeholder="Выберите длительность" 
+                            class="w-full"
+                        />
+                    </div>
+                    <Button type="submit" label="Заблокировать время" severity="warning" icon="pi pi-lock" class="w-full" />
+                </form>
+            </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Dialog>
 
     <Modal :open="showInfoModal" @close="closeInfo">
       <template #title>{{ info.break_id ? 'Перерыв' : 'Запись' }}</template>
@@ -232,7 +243,7 @@
           <div>Время: <span class="font-mono">{{ info.time }}</span> | Дата: <span class="font-mono">{{ info.date }}</span></div>
           <a :href="'tel:' + info.client?.phone" class="block">Клиент: <span class="font-medium">{{ info.client?.name }}</span> <span class="text-gray-600">{{ info.client?.phone }}</span></a>
           <div>Услуга: <span class="font-medium">{{ info.service?.name }}</span></div>
-          <MasterCrmNotes v-if="info.id" :appointment-id="info.id" />
+          <MasterCrmNotes v-if="info.id" :key="info.id" :appointment-id="info.id" :initial-notes="info.private_notes" />
         </div>
         <div class="space-y-3 text-sm" v-else>
            <div>Время: <span class="font-mono">{{ info.time }}</span></div>
@@ -257,10 +268,24 @@ import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { MicrophoneIcon } from '@heroicons/vue/24/solid'
 import Modal from '../../components/UI/Modal.vue'
-import Button from '../../components/UI/Button.vue'
 import MasterCrmNotes from './MasterCrmNotes.vue'
 import MasterLayout from '../../Layouts/MasterLayout.vue'
 import { useOfflineQueue } from '../../Composables/useOfflineQueue'
+
+// PrimeVue Components
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
+import Select from 'primevue/select'
+import Card from 'primevue/card'
+import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
+import Textarea from 'primevue/textarea'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
 
 const props = defineProps({ user: Object })
 defineOptions({ layout: MasterLayout })
@@ -344,10 +369,11 @@ const errorMessage = ref('')
 const modalTab = ref('book')
 const form = ref({ date: '', time: '', service_id: null, client_name: '', client_phone: '', preferred_channels: [] })
 const showInfoModal = ref(false)
-const info = ref({ id: null, date: '', time: '', client: null, service: null, break_id: null })
+const info = ref({ id: null, date: '', time: '', client: null, service: null, break_id: null, private_notes: '' })
+const fetchError = ref('')
 const MIN_PHONE_DIGITS = 5
 const MAX_PHONE_DIGITS = 11
-const breakDurationMin = ref(30)
+const breakDuration = ref(30)
 const voiceOpen = ref(false)
 const voiceText = ref('')
 const voiceError = ref('')
@@ -474,14 +500,28 @@ function formatDateLocal(date) {
 
 async function fetchSlots() {
   loading.value = true
+  fetchError.value = ''
   try {
     const dateStr = formatDateLocal(selectedDate.value)
+    // Добавим проверку user.id
+    if (!props.user?.id) {
+        console.error('User ID is missing in props')
+        fetchError.value = 'User ID missing'
+        return
+    }
     const res = await apiFetch(`/api/masters/${props.user.id}/slots?date=${encodeURIComponent(dateStr)}`)
+    if (!res.ok) {
+        throw new Error(`API Error: ${res.status} ${res.statusText}`)
+    }
     const json = await res.json()
     const data = json.data || []
     slots.value = Array.isArray(data) ? data : []
     isDayOff.value = json.meta?.is_day_off || false
     dayOffId.value = json.meta?.day_off_id || null
+  } catch (e) {
+      console.error('fetchSlots error:', e)
+      fetchError.value = e.message
+      slots.value = []
   } finally {
     loading.value = false
   }
@@ -568,7 +608,9 @@ async function submitCreate() {
   payload.client_name = form.value.client_name
   payload.client_phone = form.value.client_phone
   payload.preferred_channels = form.value.preferred_channels
-  
+  // Добавляем ID мастера (текущего пользователя)
+  payload.master_id = props.user?.id
+
   // OFFLINE CHECK
   if (!isOnline.value) {
     addAppointmentToQueue(payload)
@@ -783,13 +825,22 @@ async function openInfoModal(slot) {
     return
   }
 
-  const res = await apiFetch(`/api/appointments/at?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(slot.time)}`, { credentials: 'same-origin' })
+  const res = await apiFetch(`/api/appointments/at?date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(slot.time)}&_t=${Date.now()}`, { credentials: 'same-origin' })
   if (res.ok) {
     const data = await res.json()
     const a = data.data ?? data
-    info.value.id = a.id ?? null
-    info.value.client = a.client ?? null
-    info.value.service = a.service ?? null
+    console.log('Appointment data loaded:', a)
+    
+    // ВАЖНО: Сбрасываем объект полностью перед обновлением, чтобы реактивность сработала
+    info.value = {
+        id: a.id ?? null,
+        date: dateStr,
+        time: slot.time,
+        client: a.client ?? null,
+        service: a.service ?? null,
+        break_id: null,
+        private_notes: a.private_notes ?? ''
+    }
     showInfoModal.value = true
   }
 }

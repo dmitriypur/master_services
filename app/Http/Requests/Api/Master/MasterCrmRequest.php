@@ -10,7 +10,7 @@ class MasterCrmRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        return \Illuminate\Support\Facades\Auth::check();
     }
 
     public function rules(): array
