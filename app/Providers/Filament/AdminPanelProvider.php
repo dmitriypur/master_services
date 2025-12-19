@@ -55,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-                EnsureSuperAdmin::class,
+                // EnsureSuperAdmin::class, // Filament сам проверяет canAccessPanel, этот middleware избыточен и может конфликтовать с логином
             ]);
     }
 }

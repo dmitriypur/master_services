@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-6 space-y-4 pb-20">
+  <div class="max-w-2xl mx-auto px-0 py-6 space-y-4 pb-20">
     <!-- Offline / Sync Status -->
     <Message v-if="!isOnline" severity="warn" icon="pi pi-exclamation-triangle" :closable="false">
        Отсутствует интернет. Вы можете создавать записи, они сохранятся локально.
@@ -36,7 +36,7 @@
         @click="openGlobalVoiceModal" 
     />
 
-    <Card class="mb-20">
+    <Card class="mb-20 [&_.p-card-body]:!px-4">
         <template #content>
             <div class="flex justify-between items-center mb-4">
                 <div class="text-lg font-medium text-gray-700">
@@ -65,11 +65,6 @@
             </div>
             
             <div v-else>
-                <!-- Debug info -->
-                <div class="text-xs text-red-500 mb-2 p-2 bg-red-50 rounded">
-                    Debug: User ID: {{ user?.id }}, Active: {{ user?.is_active }}, Slots: {{ slots.length }}<br>
-                    Error: {{ fetchError }}
-                </div>
                 <div v-if="isDayOff" class="text-center py-8 text-gray-500">
                     <i class="pi pi-calendar-times text-4xl mb-2 block"></i>
                     Выходной день
@@ -120,62 +115,63 @@
        </Link>
     </div>
 
-    <Dialog v-model:visible="showModal" modal header="Запись" :style="{ width: '90vw', maxWidth: '500px' }" @hide="closeModal">
+    <Dialog v-model:visible="showModal" modal header="Запись" :style="{ width: '90vw', maxWidth: '500px' }" :contentStyle="{ padding: '0 1rem 1rem 1rem' }" @hide="closeModal">
       <Tabs value="book">
         <TabList>
             <Tab value="book" @click="modalTab='book'">Записать Клиента</Tab>
             <Tab value="break" @click="modalTab='break'" :disabled="!form.time">Перерыв</Tab>
         </TabList>
-        <TabPanels>
+        <TabPanels :pt="{ root: { class: '!p-0' }, content: { class: '!p-3' } }">
             <TabPanel value="book">
-                <form @submit.prevent="submitCreate" class="flex flex-col gap-4 pt-2">
+                <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
                     <div class="flex justify-between text-sm bg-gray-50 p-2 rounded">
                         <span>Дата: <span class="font-bold">{{ form.date }}</span></span>
                         <span>Время: <span class="font-bold">{{ form.time }}</span></span>
                     </div>
 
-                    <div class="flex flex-col gap-2">
-                        <label class="font-medium">Услуга</label>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-medium text-sm">Услуга</label>
                         <Select 
                             v-model="form.service_id" 
                             :options="services" 
                             optionLabel="name" 
                             optionValue="id" 
                             placeholder="Выберите услугу" 
-                            class="w-full"
+                            class="w-full !p-2"
                         />
                     </div>
 
-                    <div class="flex flex-col gap-2">
-                        <label class="font-medium">Клиент</label>
-                        <div class="space-y-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-medium text-sm">Клиент</label>
+                        <div class="space-y-2">
                             <InputText 
                                 v-model="form.client_name" 
                                 placeholder="Имя клиента" 
-                                class="w-full"
+                                class="w-full !p-2"
                             />
                             <div class="flex flex-col gap-1">
                                 <InputMask 
                                     v-model="form.client_phone" 
                                     mask="89999999999" 
                                     placeholder="89990000000" 
-                                    class="w-full"
+                                    class="w-full !p-2"
                                     @input="onPhoneInput" 
                                 />
-                                <small class="text-gray-500">Если клиент новый, он будет создан автоматически.</small>
-                                <small v-if="form.client_phone && !phoneValid" class="text-red-500">Неверный формат телефона</small>
+                                <small class="text-gray-500 text-xs">Если клиент новый, он будет создан автоматически.</small>
+                                <small v-if="form.client_phone && !phoneValid" class="text-red-500 text-xs">Неверный формат телефона</small>
                             </div>
                         </div>
                     </div>
 
                     <!-- Голосовой ввод внутри модалки -->
-                    <div class="border-t pt-3 mt-1">
+                    <div class="border-t pt-2 mt-1">
                         <Button 
                             type="button" 
                             :label="voiceOpen ? 'Скрыть голосовой ввод' : 'Микрофон'" 
                             :icon="voiceOpen ? 'pi pi-chevron-up' : 'pi pi-microphone'"
                             text 
                             size="small"
+                            class="!p-1"
                             @click="voiceOpen = !voiceOpen" 
                         />
                         
@@ -183,8 +179,8 @@
                             <div class="relative">
                                 <Textarea 
                                     v-model="voiceText" 
-                                    rows="3" 
-                                    class="w-full text-sm"
+                                    rows="2" 
+                                    class="w-full text-sm !p-2"
                                     placeholder="Диктуйте имя и телефон..." 
                                 />
                                 <button 
@@ -210,7 +206,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-2">
+                    <div class="pt-1">
                         <Button type="submit" label="Создать запись" icon="pi pi-check" class="w-full" />
                     </div>
                 </form>
@@ -222,12 +218,12 @@
                         Блокировка времени <span class="font-bold">{{ form.time }}</span>
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label class="font-medium">Длительность (мин)</label>
+                        <label class="font-medium text-sm">Длительность (мин)</label>
                         <Select 
                             v-model="breakDuration" 
                             :options="[15, 30, 45, 60, 90, 120]" 
                             placeholder="Выберите длительность" 
-                            class="w-full"
+                            class="w-full !p-2"
                         />
                     </div>
                     <Button type="submit" label="Заблокировать время" severity="warning" icon="pi pi-lock" class="w-full" />
@@ -641,7 +637,7 @@ function addMinutesToTime(timeStr, minutes) {
 async function submitBreak() {
   const dateStr = formatDateLocal(selectedDate.value)
   const startTime = form.value.time
-  const endTime = addMinutesToTime(form.value.time, breakDurationMin.value)
+  const endTime = addMinutesToTime(form.value.time, breakDuration.value)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   const res = await apiFetch('/api/master/schedule-exceptions', {
     method: 'POST',
