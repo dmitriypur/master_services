@@ -155,7 +155,6 @@
                                     mask="89999999999" 
                                     placeholder="89990000000" 
                                     class="w-full !p-2"
-                                    @input="onPhoneInput" 
                                 />
                                 <small class="text-gray-500 text-xs">Если клиент новый, он будет создан автоматически.</small>
                                 <small v-if="form.client_phone && !phoneValid" class="text-red-500 text-xs">Неверный формат телефона</small>
@@ -480,11 +479,6 @@ const phoneValid = computed(() => {
   if (len === 0) return true
   return (len >= MIN_PHONE_DIGITS && len <= MAX_PHONE_DIGITS)
 })
-function onPhoneInput(e) {
-  const val = String(e.target.value || '')
-  const digits = val.replace(/\D/g, '').slice(0, MAX_PHONE_DIGITS)
-  form.value.client_phone = digits
-}
 
 function formatDateLocal(date) {
   if (!(date instanceof Date)) date = new Date(date)
