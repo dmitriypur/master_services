@@ -31,6 +31,6 @@ class SettingsController extends Controller
     {
         $action->execute($request->user(), $request->validated());
 
-        return redirect()->route('master.calendar.index');
+        return back(); // Остаемся на странице настроек
     }
 }

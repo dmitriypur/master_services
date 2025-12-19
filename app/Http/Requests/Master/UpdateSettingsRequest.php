@@ -20,13 +20,13 @@ class UpdateSettingsRequest extends FormRequest
         return [
             'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
             'address' => ['required', 'string', 'max:255'],
-            'phone' => ['sometimes', 'nullable', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
+            'phone' => ['required', 'string', 'min:5', 'max:11', 'regex:/^\d+$/'],
             'work_days' => ['required', 'array', 'min:1', 'max:7'],
-            'work_days.*' => ['string', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
+            'work_days.*' => ['integer', 'min:1', 'max:7'],
             'work_time_from' => ['required', 'date_format:H:i', 'before:work_time_to'],
             'work_time_to' => ['required', 'date_format:H:i', 'after:work_time_from'],
             'slot_duration_min' => ['required', 'integer', Rule::in([15, 30, 60])],
-            'services' => ['sometimes', 'array'],
+            'services' => ['required', 'array', 'min:1'],
             'services.*' => ['integer', Rule::exists('services', 'id')],
         ];
     }
@@ -43,7 +43,10 @@ class UpdateSettingsRequest extends FormRequest
             'work_days.required' => 'Выберите рабочие дни',
             'work_days.array' => 'Рабочие дни в неверном формате',
             'work_days.min' => 'Выберите хотя бы один рабочий день',
-            'work_days.*.in' => 'Недопустимый день недели',
+            'work_days.max' => 'Не более 7 рабочих дней',
+            'work_days.*.integer' => 'Неверный формат дня недели',
+            'work_days.*.min' => 'Неверный день недели',
+            'work_days.*.max' => 'Неверный день недели',
             'work_time_from.required' => 'Укажите время начала',
             'work_time_from.date_format' => 'Неверный формат времени начала',
             'work_time_from.before' => 'Время начала должно быть раньше времени окончания',
@@ -53,9 +56,12 @@ class UpdateSettingsRequest extends FormRequest
             'slot_duration_min.required' => 'Укажите длительность слота',
             'slot_duration_min.integer' => 'Длительность слота должна быть числом',
             'slot_duration_min.in' => 'Допустимые значения: 15, 30, 60 минут',
+            'services.required' => 'Выберите хотя бы одну услугу',
+            'services.min' => 'Выберите хотя бы одну услугу',
             'services.array' => 'Список услуг в неверном формате',
             'services.*.integer' => 'Неверная услуга',
             'services.*.exists' => 'Некоторая услуга не найдена',
+            'phone.required' => 'Укажите номер телефона',
             'phone.regex' => 'Телефон: только цифры, 5–11',
         ];
     }
@@ -64,6 +70,23 @@ class UpdateSettingsRequest extends FormRequest
     {
         $from = $this->input('work_time_from');
         $to = $this->input('work_time_to');
+        $days = $this->input('work_days');
+
+        if (is_array($days)) {
+            // Фильтруем массив от null и пустых значений, затем приводим к int
+            $cleanDays = array_filter($days, fn($v) => !is_null($v) && $v !== '');
+            $this->merge([
+                'work_days' => array_map('intval', array_values($cleanDays)),
+            ]);
+        }
+
+        $services = $this->input('services');
+        if (is_array($services)) {
+            $cleanServices = array_filter($services, fn($v) => !is_null($v) && $v !== '');
+            $this->merge([
+                'services' => array_map('intval', array_values($cleanServices)),
+            ]);
+        }
 
         $this->merge([
             'work_time_from' => $this->normalizeTime($from),

@@ -1,91 +1,94 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-6">
-    <div class="mb-4 flex items-center gap-3">
-      <Link href="/master/calendar" class="inline-flex text-sm items-center rounded bg-green-500 text-white px-3 py-1.5">Календарь</Link>
-      <Link href="/master/clients" class="inline-flex text-sm items-center rounded bg-sky-500 text-white px-3 py-1.5">Клиенты</Link>
+  <div class="max-w-2xl mx-auto py-6 space-y-6 pb-20">
+    <!-- Кнопки навигации перенесены вниз -->
+    
+    <Card>
+      <template #title>Настройки мастера</template>
+      <template #content>
+        <form @submit.prevent="submit" class="flex flex-col gap-4">
+          
+          <div class="flex flex-col gap-2">
+            <label for="city" class="font-medium">Город <span class="text-red-500">*</span></label>
+            <Select v-model="form.city_id" :options="cities" optionLabel="name" optionValue="id" placeholder="Выберите город" :invalid="!!form.errors.city_id" class="w-full" />
+            <small v-if="form.errors.city_id" class="text-red-500">{{ form.errors.city_id }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="address" class="font-medium">Адрес <span class="text-red-500">*</span></label>
+            <InputText id="address" v-model="form.address" placeholder="Улица, дом, кабинет" :invalid="!!form.errors.address" />
+            <small v-if="form.errors.address" class="text-red-500">{{ form.errors.address }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="phone" class="font-medium">Телефон <span class="text-red-500">*</span></label>
+            <InputMask id="phone" v-model="form.phone" mask="89999999999" placeholder="89990000000" :invalid="!!form.errors.phone" />
+            <small v-if="form.errors.phone" class="text-red-500">{{ form.errors.phone }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="font-medium">Дни недели <span class="text-red-500">*</span></label>
+            <div class="flex flex-wrap gap-2">
+               <SelectButton v-model="form.work_days" :options="weekDays" optionLabel="label" optionValue="key" multiple aria-labelledby="multiple" />
+            </div>
+            <small v-if="form.errors.work_days" class="text-red-500">{{ form.errors.work_days }}</small>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label for="work_time_from" class="font-medium">Время с <span class="text-red-500">*</span></label>
+              <InputText id="work_time_from" v-model="form.work_time_from" type="time" :invalid="!!form.errors.work_time_from" />
+              <small v-if="form.errors.work_time_from" class="text-red-500">{{ form.errors.work_time_from }}</small>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="work_time_to" class="font-medium">Время до <span class="text-red-500">*</span></label>
+              <InputText id="work_time_to" v-model="form.work_time_to" type="time" :invalid="!!form.errors.work_time_to" />
+              <small v-if="form.errors.work_time_to" class="text-red-500">{{ form.errors.work_time_to }}</small>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="slot_duration" class="font-medium">Длительность слота <span class="text-red-500">*</span></label>
+            <Select v-model="form.slot_duration_min" :options="durationOptions" optionLabel="label" optionValue="value" placeholder="Выберите длительность" :invalid="!!form.errors.slot_duration_min" class="w-full" />
+            <small v-if="form.errors.slot_duration_min" class="text-red-500">{{ form.errors.slot_duration_min }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="font-medium">Услуги <span class="text-red-500">*</span></label>
+            <CascadingServiceSelect v-model="form.services" />
+            <small v-if="form.errors.services" class="text-red-500">{{ form.errors.services }}</small>
+          </div>
+
+          <div class="pt-4">
+            <Button type="submit" label="Сохранить" icon="pi pi-check" class="w-full" :loading="form.processing" />
+          </div>
+        </form>
+      </template>
+    </Card>
+
+    <!-- Плавающая панель навигации внизу -->
+    <div class="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10" v-if="user?.is_active && !form.isDirty">
+       <Link href="/master/calendar">
+         <Button label="В календарь" icon="pi pi-calendar" severity="success" raised rounded />
+       </Link>
+       <Link href="/master/clients">
+         <Button label="Клиенты" icon="pi pi-users" severity="info" raised rounded />
+       </Link>
     </div>
-    <h1 class="text-2xl font-semibold mb-6">Настройки мастера</h1>
-    <form @submit.prevent="submit" class="space-y-6">
-      <div>
-        <label class="block text-sm font-medium mb-2">Город</label>
-        <select v-model="form.city_id" class="block w-full rounded border border-gray-300 px-3 py-2">
-          <option :value="null">Выберите город</option>
-          <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-        <p v-if="form.errors.city_id" class="text-red-600 text-sm mt-1">{{ form.errors.city_id }}</p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-2">Адрес</label>
-        <input v-model="form.address" type="text" class="block w-full rounded border border-gray-300 px-3 py-2" />
-        <p v-if="form.errors.address" class="text-red-600 text-sm mt-1">{{ form.errors.address }}</p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-2">Телефон</label>
-        <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="block w-full rounded border border-gray-300 px-3 py-2" />
-        <p v-if="form.errors.phone" class="text-red-600 text-sm mt-1">{{ form.errors.phone }}</p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-2">Дни недели</label>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="d in weekDays"
-            :key="d.key"
-            type="button"
-            class="px-3 py-1.5 rounded-md text-sm border"
-            :class="form.work_days.includes(d.key) ? 'bg-sky-700 text-white border-sky-700' : 'bg-white text-gray-700 border-gray-300'"
-            @click="toggleDay(d.key)"
-          >
-            {{ d.label }}
-          </button>
-        </div>
-        <p v-if="form.errors.work_days" class="text-red-600 text-sm mt-1">{{ form.errors.work_days }}</p>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-2">Время с</label>
-          <input v-model="form.work_time_from" type="time" step="60" class="block w-full rounded border border-gray-300 px-3 py-2" />
-          <p v-if="form.errors.work_time_from" class="text-red-600 text-sm mt-1">{{ form.errors.work_time_from }}</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-2">Время до</label>
-          <input v-model="form.work_time_to" type="time" step="60" class="block w-full rounded border border-gray-300 px-3 py-2" />
-          <p v-if="form.errors.work_time_to" class="text-red-600 text-sm mt-1">{{ form.errors.work_time_to }}</p>
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-2">Длительность слота</label>
-        <select v-model.number="form.slot_duration_min" class="block w-full rounded border border-gray-300 px-3 py-2">
-          <option :value="15">15 мин</option>
-          <option :value="30">30 мин</option>
-          <option :value="60">60 мин</option>
-        </select>
-        <p v-if="form.errors.slot_duration_min" class="text-red-600 text-sm mt-1">{{ form.errors.slot_duration_min }}</p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-2">Услуги</label>
-        <!-- Новый каскадный селект -->
-        <CascadingServiceSelect v-model="form.services" />
-        <p v-if="form.errors.services" class="text-red-600 text-sm mt-1">{{ form.errors.services }}</p>
-      </div>
-
-      <div>
-        <button type="submit" class="flex items-center justify-center w-full rounded-lg bg-indigo-700 text-white text-center px-4 py-2">Сохранить</button>
-      </div>
-    </form>
   </div>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
-import { useForm } from '@inertiajs/vue3'
+import { Link, useForm } from '@inertiajs/vue3'
 import MasterLayout from '../../Layouts/MasterLayout.vue'
 import CascadingServiceSelect from '../../components/UI/CascadingServiceSelect.vue'
+
+// PrimeVue Components
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
+import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
+import Card from 'primevue/card'
 
 const props = defineProps({ user: Object, cities: Array, settings: Object, servicesOptions: Array, selectedServiceIds: Array })
 defineOptions({ layout: MasterLayout })
@@ -96,34 +99,58 @@ const form = useForm({
   phone: props.user?.phone ?? '',
   work_days: props.settings?.work_days ?? [],
   work_time_from: props.settings?.work_time_from ?? '',
-  work_time_to: props.settings?.work_time_to ?? '',
+  work_time_to: props.settings?.work_time_to ? props.settings.work_time_to.substring(0, 5) : '',
   slot_duration_min: props.settings?.slot_duration_min ?? 30,
-  services: props.selectedServiceIds ?? [],
+  services: props.selectedServiceIds ?? []
 })
 
 const weekDays = [
-  { key: 'mon', label: 'Пн' },
-  { key: 'tue', label: 'Вт' },
-  { key: 'wed', label: 'Ср' },
-  { key: 'thu', label: 'Чт' },
-  { key: 'fri', label: 'Пт' },
-  { key: 'sat', label: 'Сб' },
-  { key: 'sun', label: 'Вс' },
+  { key: 1, label: 'Пн' },
+  { key: 2, label: 'Вт' },
+  { key: 3, label: 'Ср' },
+  { key: 4, label: 'Чт' },
+  { key: 5, label: 'Пт' },
+  { key: 6, label: 'Сб' },
+  { key: 7, label: 'Вс' },
 ]
 
-function toggleDay(key) {
-  const idx = form.work_days.indexOf(key)
-  if (idx >= 0) {
-    form.work_days.splice(idx, 1)
-  } else {
-    form.work_days.push(key)
-  }
-}
+const durationOptions = [
+    { label: '15 мин', value: 15 },
+    { label: '30 мин', value: 30 },
+    { label: '45 мин', value: 45 },
+    { label: '1 час', value: 60 },
+    { label: '1.5 часа', value: 90 },
+    { label: '2 часа', value: 120 }
+];
 
 function submit() {
-  form.put('/master/settings')
-}
-</script>
+    // Приводим данные к нужному формату перед отправкой
+    const payload = {
+      ...form.data(),
+      // Фильтруем null и undefined, и убеждаемся что числа
+      work_days: form.work_days
+        .filter(d => d !== null && d !== undefined)
+        .map(Number),
+      // Убеждаемся, что services - это массив, и фильтруем пустые значения
+      services: (Array.isArray(form.services) ? form.services : [])
+        .filter(s => s !== null && s !== undefined && s !== '')
+        .map(Number)
+    }
+    
+    // Используем обычный Inertia router для ручной отправки
+    form.defaults(payload)
+    form.work_days = payload.work_days 
+    
+    form.put('/master/settings', {
+      onSuccess: () => {
+        // Можно добавить Toast
+      },
+      onError: (errors) => {
+        console.log('Errors:', errors)
+      }
+    })
+  }
+  </script>
 
 <style scoped>
 </style>

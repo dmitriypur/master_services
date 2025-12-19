@@ -40,17 +40,27 @@
             :disabled="!row.category_id || row.subcategories.length === 0"
             class="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
           >
-            <option :value="null" disabled>{{ row.category_id ? 'Выберите...' : '—' }}</option>
+            <option :value="null" disabled>{{ row.category_id ? 'Все подкатегории (выбрать всё)' : '—' }}</option>
+            <option :value="-1" class="font-bold text-indigo-600" v-if="row.category_id && row.subcategories.length > 0">Выбрать всю категорию</option>
             <option v-for="sub in row.subcategories" :key="sub.id" :value="sub.id">{{ sub.name }}</option>
           </select>
         </div>
       </div>
 
       <!-- Услуги (Чекбоксы) -->
-      <div v-if="row.subcategory_id && row.services.length > 0" class="mt-4 pt-4 border-t border-gray-200">
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Выберите услуги <span class="text-indigo-500 text-[10px] ml-1 font-normal normal-case">(можно несколько)</span>
-        </label>
+      <div v-if="(row.subcategory_id || row.subcategory_id === -1) && row.services.length > 0" class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex justify-between items-center mb-3">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Выберите услуги <span class="text-indigo-500 text-[10px] ml-1 font-normal normal-case">(можно несколько)</span>
+            </label>
+            <button 
+                type="button" 
+                @click="toggleAllServices(row)"
+                class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+                {{ row.selected_service_ids.length === row.services.length ? 'Снять всё' : 'Выбрать всё' }}
+            </button>
+        </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label 
@@ -228,25 +238,44 @@ const onSubcategoryChange = async (row) => {
   row.selected_service_ids = [];
   row.services = [];
   
-  if (row.subcategory_id) {
+  if (row.subcategory_id === -1) {
+    // Выбрана опция "Выбрать всю категорию"
+    // Загружаем все услуги для всех подкатегорий этой категории
+    let allServices = [];
+    if (row.subcategories && row.subcategories.length) {
+      for (const sub of row.subcategories) {
+          const services = await fetchChildren(sub.id);
+          allServices = [...allServices, ...services];
+      }
+    }
+    row.services = allServices;
+    // Автоматически выбираем всё
+    row.selected_service_ids = allServices.map(s => s.id);
+    
+  } else if (row.subcategory_id) {
     row.services = await fetchChildren(row.subcategory_id);
+    // При выборе подкатегории сразу выбираем все услуги
+    row.selected_service_ids = row.services.map(s => s.id);
   }
   emitUpdate();
 };
 
+const toggleAllServices = (row) => {
+    if (row.selected_service_ids.length === row.services.length) {
+        // Снять всё
+        row.selected_service_ids = [];
+    } else {
+        // Выбрать всё
+        row.selected_service_ids = row.services.map(s => s.id);
+    }
+    emitUpdate();
+};
+
 const emitUpdate = () => {
-  // Собираем ВСЕ выбранные ID со всех строк
-  let allSelectedIds = [];
-  
-  rows.value.forEach(row => {
-      if (row.selected_service_ids && row.selected_service_ids.length > 0) {
-          allSelectedIds = allSelectedIds.concat(row.selected_service_ids);
-      }
-  });
-  
-  // Убираем дубликаты на всякий случай
-  const uniqueIds = [...new Set(allSelectedIds)];
-    
+  // Собираем все ID со всех строк
+  const allIds = rows.value.flatMap(r => r.selected_service_ids);
+  // Убираем дубликаты
+  const uniqueIds = [...new Set(allIds)];
   emit('update:modelValue', uniqueIds);
 };
 

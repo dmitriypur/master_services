@@ -48,10 +48,17 @@ class UpdateSettingsAction
                 $user->services()->sync($syncData);
             }
 
-            if (! $user->is_active) {
+            // Проверяем, что есть хотя бы одна услуга перед активацией
+            $hasServices = $user->services()->wherePivot('is_active', true)->exists();
+
+            if (! $user->is_active && $hasServices) {
                 $user->is_active = true;
                 $user->profile_completed_at = now();
                 $user->save();
+            } elseif ($user->is_active && ! $hasServices) {
+                 // Если мастер удалил все услуги, деактивируем его
+                 $user->is_active = false;
+                 $user->save();
             }
         });
 
