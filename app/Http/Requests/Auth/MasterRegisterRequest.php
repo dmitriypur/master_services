@@ -25,6 +25,12 @@ class MasterRegisterRequest extends FormRequest
             'initData' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8'],
             'telegram_user' => ['nullable', 'array'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'work_days' => ['nullable', 'array'],
+            'work_days.*' => ['integer', 'min:1', 'max:7'],
+            'work_time_from' => ['nullable', 'date_format:H:i'],
+            'work_time_to' => ['nullable', 'date_format:H:i'],
+            'slot_duration_min' => ['nullable', 'integer', 'min:15', 'max:240'],
         ];
     }
 }

@@ -69,12 +69,15 @@ Route::post('/debug/webapp-event', function (Request $request) {
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::middleware('auth')->group(function () {
-    Route::get('/master/clients', function () {
-        return Inertia::render('Master/Clients');
-    })->name('master.clients.index');
     Route::get('/master/settings', [SettingsController::class, 'edit'])->name('master.settings.edit');
     Route::put('/master/settings', [SettingsController::class, 'update'])->name('master.settings.update');
-    Route::get('/master/calendar', [CalendarController::class, 'index'])->name('master.calendar.index');
+
+    Route::middleware([\App\Http\Middleware\EnsureProfileCompleted::class])->group(function () {
+        Route::get('/master/clients', function () {
+            return Inertia::render('Master/Clients');
+        })->name('master.clients.index');
+        Route::get('/master/calendar', [CalendarController::class, 'index'])->name('master.calendar.index');
+    });
 });
 
 Route::get('/book', [BookingController::class, 'index'])->name('client.booking.index');

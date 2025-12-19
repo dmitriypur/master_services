@@ -47,6 +47,12 @@ class UpdateSettingsAction
                 }
                 $user->services()->sync($syncData);
             }
+
+            if (! $user->is_active) {
+                $user->is_active = true;
+                $user->profile_completed_at = now();
+                $user->save();
+            }
         });
 
         return $user->refresh();

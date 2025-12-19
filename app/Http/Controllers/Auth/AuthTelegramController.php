@@ -101,8 +101,19 @@ class AuthTelegramController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
+        // Если профиль не заполнен, отправляем на настройки
+        $redirect = $user->is_active ? url('/master/calendar') : url('/master/settings');
+
+        $token = $user->createToken('master-token')->plainTextToken;
+
         return response()->json([
-            'redirect' => url('/master/calendar'),
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+            ],
+            'redirect' => $redirect,
         ]);
     }
 }

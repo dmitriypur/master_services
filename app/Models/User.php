@@ -34,6 +34,8 @@ class User extends Authenticatable implements FilamentUser
         'phone',
         'subscription_status',
         'trial_ends_at',
+        'is_active',
+        'profile_completed_at',
     ];
 
     /**
@@ -58,6 +60,8 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'subscription_status' => 'string',
             'trial_ends_at' => 'datetime',
+            'is_active' => 'boolean',
+            'profile_completed_at' => 'datetime',
         ];
     }
 

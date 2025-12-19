@@ -85,6 +85,16 @@ class MasterRegisterController extends Controller
             'city_id' => !empty($payload['city_id']) ? (int) $payload['city_id'] : null,
             'phone' => $phone,
             'subscription_status' => 'trial',
+            'is_active' => true,
+            'profile_completed_at' => now(),
+        ]);
+
+        $user->masterSettings()->create([
+            'address' => $payload['address'] ?? null,
+            'work_days' => $payload['work_days'] ?? [],
+            'work_time_from' => $payload['work_time_from'] ?? '09:00',
+            'work_time_to' => $payload['work_time_to'] ?? '18:00',
+            'slot_duration_min' => $payload['slot_duration_min'] ?? 60,
         ]);
 
         $serviceIds = array_map('intval', (array) ($payload['services'] ?? []));

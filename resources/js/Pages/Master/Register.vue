@@ -38,6 +38,44 @@
           <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="mt-1 w-full border rounded p-2" placeholder="Телефон (только цифры)" />
         </div>
         <div class="mt-4">
+          <label class="block text-sm font-medium">Адрес приема (необязательно)</label>
+          <input v-model="form.address" type="text" class="mt-1 w-full border rounded p-2" placeholder="Улица, дом, кабинет" />
+        </div>
+        
+        <div class="mt-4 border-t pt-4">
+          <h3 class="text-md font-medium mb-2">График работы</h3>
+          <div class="grid grid-cols-2 gap-4">
+             <div>
+                <label class="block text-xs font-medium text-gray-600">Начало</label>
+                <input v-model="form.work_time_from" type="time" class="mt-1 w-full border rounded p-2" />
+             </div>
+             <div>
+                <label class="block text-xs font-medium text-gray-600">Конец</label>
+                <input v-model="form.work_time_to" type="time" class="mt-1 w-full border rounded p-2" />
+             </div>
+          </div>
+          <div class="mt-3">
+             <label class="block text-xs font-medium text-gray-600 mb-1">Рабочие дни</label>
+             <div class="flex flex-wrap gap-2">
+               <label v-for="(day, index) in weekDays" :key="index" class="inline-flex items-center gap-1 text-sm border px-2 py-1 rounded cursor-pointer" :class="{'bg-black text-white': form.work_days.includes(index + 1)}">
+                 <input type="checkbox" :value="index + 1" v-model="form.work_days" class="hidden" />
+                 <span>{{ day }}</span>
+               </label>
+             </div>
+          </div>
+          <div class="mt-3">
+             <label class="block text-xs font-medium text-gray-600">Длительность сеанса (мин)</label>
+             <select v-model="form.slot_duration_min" class="mt-1 w-full border rounded p-2">
+                <option :value="30">30 мин</option>
+                <option :value="45">45 мин</option>
+                <option :value="60">1 час</option>
+                <option :value="90">1.5 часа</option>
+                <option :value="120">2 часа</option>
+             </select>
+          </div>
+        </div>
+
+        <div class="mt-4">
           <label class="block text-sm font-medium">Пароль</label>
           <input v-model="form.password" type="password" class="mt-1 w-full border rounded p-2" placeholder="Минимум 8 символов" />
         </div>
@@ -68,12 +106,25 @@ import { usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 const props = defineProps({ cities: Array, services: Array })
-const form = ref({ name: '', city_id: null, services: [], phone: '', password: '' })
+const form = ref({ 
+  name: '', 
+  city_id: null, 
+  services: [], 
+  phone: '', 
+  password: '',
+  address: '',
+  work_days: [1, 2, 3, 4, 5], // Mon-Fri default
+  work_time_from: '09:00',
+  work_time_to: '18:00',
+  slot_duration_min: 60
+})
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
 const initData = ref('')
 const telegramUser = ref(null)
+
+const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const botName = computed(() => page.props?.telegramBotName || 'YOUR_BOT_USERNAME')
 
