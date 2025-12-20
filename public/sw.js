@@ -1,5 +1,5 @@
-const CACHE_NAME = 'master-calendar-v2';
-const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v2';
+const CACHE_NAME = 'master-calendar-v4';
+const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v4';
 
 // Install event: Skip waiting to activate immediately
 self.addEventListener('install', (event) => {
@@ -34,7 +34,6 @@ self.addEventListener('fetch', (event) => {
     if (url.protocol.startsWith('chrome-extension')) return;
 
     // API requests: Network Only (or handled by app logic)
-    // We generally want API to fail fast if offline so the app can handle it (queueing)
     if (url.pathname.startsWith('/api/')) {
         return;
     }
@@ -44,16 +43,43 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(event.request)
                 .then((networkResponse) => {
-                    return caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
-                        cache.put(event.request, networkResponse.clone());
+                    // Check if we received a valid response
+                    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                         return networkResponse;
+                    }
+
+                    const responseToCache = networkResponse.clone();
+                    const responseToCacheClean = networkResponse.clone();
+
+                    caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
+                        // 1. Cache the actual request (with params)
+                        cache.put(event.request, responseToCache);
+
+                        // 2. Cache the clean URL (without params) to ensure fallback works
+                        // This handles Telegram's dynamic query parameters
+                        if (url.search) {
+                            const cleanUrl = new URL(event.request.url);
+                            cleanUrl.search = '';
+                            cache.put(cleanUrl.toString(), responseToCacheClean);
+                        }
                     });
+
+                    return networkResponse;
                 })
                 .catch(() => {
-                    return caches.match(event.request).then((cachedResponse) => {
+                    // Offline fallback
+                    return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
                         if (cachedResponse) return cachedResponse;
-                        // Optionally return a custom offline page here
-                        // return caches.match('/offline.html');
+
+                        // Try finding the clean URL version explicitly
+                        const cleanUrl = new URL(event.request.url);
+                        cleanUrl.search = '';
+                        return caches.match(cleanUrl.toString()).then((cleanResponse) => {
+                            if (cleanResponse) return cleanResponse;
+
+                            // Final fallback to the main entry point
+                            return caches.match('/master/calendar', { ignoreSearch: true });
+                        });
                     });
                 })
         );
@@ -61,17 +87,19 @@ self.addEventListener('fetch', (event) => {
     }
 
     // Static Assets (JS, CSS, Images, Fonts): Stale While Revalidate
-    // This means we serve from cache immediately, but update the cache in background
     if (
         url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff|woff2|ttf|eot|ico)$/) ||
         url.pathname.startsWith('/build/') // Vite build assets
     ) {
         event.respondWith(
-            caches.match(event.request).then((cachedResponse) => {
+            caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
                 const fetchPromise = fetch(event.request).then((networkResponse) => {
-                    caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
-                        cache.put(event.request, networkResponse.clone());
-                    });
+                    // Validate response before caching
+                    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                        caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
+                            cache.put(event.request, networkResponse.clone());
+                        });
+                    }
                     return networkResponse;
                 });
                 return cachedResponse || fetchPromise;
