@@ -24,8 +24,8 @@ const inertiaRoot = document.querySelector('[data-page]')
 if (inertiaRoot) {
   createInertiaApp({
     resolve: (name) => {
-      const pages = import.meta.glob('./Pages/**/*.vue')
-      return pages[`./Pages/${name}.vue`]()
+      const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
+      return pages[`./Pages/${name}.vue`]
     },
     setup({ el, App, props, plugin }) {
       // Удаляем лоадер, если он есть (для надежности)
