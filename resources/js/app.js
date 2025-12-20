@@ -24,12 +24,20 @@ const inertiaRoot = document.querySelector('[data-page]')
 if (inertiaRoot) {
   createInertiaApp({
     resolve: (name) => {
-      const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
-      const page = pages[`./Pages/${name}.vue`]
-      page.default.layout = page.default.layout || AppLayout
-      return page
+      const pages = import.meta.glob('./Pages/**/*.vue')
+      return pages[`./Pages/${name}.vue`]()
     },
     setup({ el, App, props, plugin }) {
+      // Удаляем лоадер, если он есть (для надежности)
+      const loader = document.getElementById('app-loading')
+      if (loader) loader.remove()
+      
+      // Инициализация Telegram WebApp
+      if (window.Telegram?.WebApp) {
+          window.Telegram.WebApp.ready()
+          window.Telegram.WebApp.expand()
+      }
+
       createApp({ render: () => h(App, props) })
         .use(plugin)
         .use(PrimeVue, {
