@@ -15,6 +15,7 @@ class UserMasterSettings extends Model
     protected $fillable = [
         'user_id',
         'address',
+        'timezone',
         'work_days',
         'work_time_from',
         'work_time_to',

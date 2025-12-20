@@ -42,29 +42,34 @@ class AuthLoginAndSettingsTest extends TestCase
             'city_id' => $city->id,
             'address' => 'Test street 1',
             'phone' => '79990001122',
-            'work_days' => ['mon','tue','wed'],
+            'work_days' => [1, 2, 3],
             'work_time_from' => '09:00',
             'work_time_to' => '18:00',
-            'slot_duration_min' => 30,
-            'services' => [$serviceA->id, $serviceB->id],
+            'services' => [
+                ['id' => $serviceA->id, 'price' => 1000, 'duration' => 60],
+                ['id' => $serviceB->id, 'price' => 2000, 'duration' => 90],
+            ],
         ];
 
-        $response = $this->put('/master/settings', $payload);
-        $response->assertRedirect('/master/calendar');
+        $response = $this->from('/master/settings')->putJson('/master/settings', $payload);
+        $response->assertRedirect('/master/settings');
 
         $master->refresh();
         $settings = $master->masterSettings;
         $this->assertNotNull($settings);
         $this->assertSame('Test street 1', $settings->address);
-        $this->assertSame(['mon','tue','wed'], $settings->work_days);
+        $this->assertSame([1, 2, 3], $settings->work_days);
         $this->assertSame('09:00', $settings->work_time_from);
         $this->assertSame('18:00', $settings->work_time_to);
-        $this->assertSame(30, $settings->slot_duration_min);
         $this->assertSame($city->id, $master->city_id);
 
         $serviceIds = $master->services()->wherePivot('is_active', true)->pluck('services.id')->all();
         sort($serviceIds);
         $this->assertSame([$serviceA->id, $serviceB->id], $serviceIds);
+
+        // Assert pivot data
+        $pivotA = $master->services()->where('services.id', $serviceA->id)->first()->pivot;
+        $this->assertEquals(1000, $pivotA->price);
+        $this->assertEquals(60, $pivotA->duration_minutes);
     }
 }
-

@@ -141,7 +141,13 @@ async function fetchSlots() {
   loading.value = true
   try {
     const dateStr = formatDateLocal(selectedDate.value)
-    const res = await fetch(`/api/masters/${masterData.value.id}/slots?date=${encodeURIComponent(dateStr)}`, { credentials: 'same-origin' })
+    const url = new URL(`/api/masters/${masterData.value.id}/slots`, window.location.origin)
+    url.searchParams.set('date', dateStr)
+    if (selectedServiceId.value) {
+      url.searchParams.set('service_id', selectedServiceId.value)
+    }
+    
+    const res = await fetch(url.toString(), { credentials: 'same-origin' })
     const text = await res.text()
     let json
     try { json = JSON.parse(text) } catch (e) { json = [] }
@@ -153,16 +159,25 @@ async function fetchSlots() {
 
 onMounted(() => {
   const first = servicesComputed.value[0]?.id ?? null
-  selectedServiceId.value = first
-  fetchSlots()
+  if (first) selectedServiceId.value = first
+  
+  // If no services loaded initially, fetch them
   if (!first) {
     fetch(`/api/masters/${masterData.value.id}/services`, { credentials: 'same-origin' })
       .then(r => r.json())
-      .then(j => { servicesOverride.value = j.data ?? []; if (!selectedServiceId.value && servicesOverride.value[0]) selectedServiceId.value = servicesOverride.value[0].id })
+      .then(j => { 
+          servicesOverride.value = j.data ?? []; 
+          if (!selectedServiceId.value && servicesOverride.value[0]) {
+              selectedServiceId.value = servicesOverride.value[0].id 
+          }
+      })
       .catch(() => {})
+  } else {
+      fetchSlots()
   }
 })
 watch(selectedDate, fetchSlots)
+watch(selectedServiceId, fetchSlots)
 
 function openCreateModal(slot) {
   const dateStr = formatDateLocal(selectedDate.value)

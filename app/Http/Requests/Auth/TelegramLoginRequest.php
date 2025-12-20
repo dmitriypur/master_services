@@ -26,4 +26,3 @@ class TelegramLoginRequest extends FormRequest
         ];
     }
 }
-

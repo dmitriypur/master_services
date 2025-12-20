@@ -12,12 +12,12 @@ class AppointmentShowAtTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_showAt_returns_appointment_in_slot(): void
+    public function test_show_at_returns_appointment_in_slot(): void
     {
         $master = User::factory()->create(['role' => 'master']);
         $master->masterSettings()->create([
             'address' => 'Test',
-            'work_days' => ['mon','tue','wed','thu','fri'],
+            'work_days' => ['mon', 'tue', 'wed', 'thu', 'fri'],
             'work_time_from' => '09:00',
             'work_time_to' => '18:00',
             'slot_duration_min' => 30,
@@ -51,4 +51,3 @@ class AppointmentShowAtTest extends TestCase
             ->assertJsonPath('data.status', 'scheduled');
     }
 }
-

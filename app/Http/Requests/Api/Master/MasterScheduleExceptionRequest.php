@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\Master;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class MasterScheduleExceptionRequest extends FormRequest
 {

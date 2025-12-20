@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\TelegramWebAppAuthRequest;
-use App\Http\Requests\Auth\TelegramLoginWidgetRequest;
 use App\Actions\Auth\GenerateMasterTokenAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\TelegramLoginWidgetRequest;
+use App\Http\Requests\Auth\TelegramWebAppAuthRequest;
 use App\Models\User;
 use App\Services\Telegram\TelegramWebAppService;
 use Illuminate\Http\JsonResponse;
@@ -40,10 +40,10 @@ class AuthTelegramController extends Controller
             ->first();
 
         if (! $user) {
-             // Если пользователя нет, возвращаем 404, чтобы фронт перекинул на регистрацию
-             return response()->json(['message' => 'User not found'], 404);
+            // Если пользователя нет, возвращаем 404, чтобы фронт перекинул на регистрацию
+            return response()->json(['message' => 'User not found'], 404);
         }
-        
+
         Auth::login($user, true);
         $request->session()->regenerate();
 
@@ -75,27 +75,27 @@ class AuthTelegramController extends Controller
             ->first();
 
         if (! $user) {
-             // Создаем нового, если нет
-             $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? ''));
-             if ($name === '') {
-                 $name = $userData['username'] ?? ('tg_'.$userData['id']);
-             }
+            // Создаем нового, если нет
+            $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? ''));
+            if ($name === '') {
+                $name = $userData['username'] ?? ('tg_'.$userData['id']);
+            }
 
-             $user = User::query()->create([
-                 'name' => $name,
-                 'email' => 'tg_'.$userData['id'].'@local',
-                 'password' => \Illuminate\Support\Str::password(32),
-                 'role' => 'master',
-                 'telegram_id' => $userData['id'],
-                 'subscription_status' => 'trial',
-             ]);
+            $user = User::query()->create([
+                'name' => $name,
+                'email' => 'tg_'.$userData['id'].'@local',
+                'password' => \Illuminate\Support\Str::password(32),
+                'role' => 'master',
+                'telegram_id' => $userData['id'],
+                'subscription_status' => 'trial',
+            ]);
         } else {
-             // Обновляем имя если поменялось
-             $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? ''));
-             if ($name !== '' && $name !== $user->name) {
-                 $user->name = $name;
-                 $user->save();
-             }
+            // Обновляем имя если поменялось
+            $name = trim(($userData['first_name'] ?? '').' '.($userData['last_name'] ?? ''));
+            if ($name !== '' && $name !== $user->name) {
+                $user->name = $name;
+                $user->save();
+            }
         }
 
         Auth::login($user, true);

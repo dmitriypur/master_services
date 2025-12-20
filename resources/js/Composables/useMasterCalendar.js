@@ -3,6 +3,7 @@ import { ru as ruLocale } from 'date-fns/locale'
 
 export function useMasterCalendar(props, appointmentQueue, services) {
     const selectedDate = ref(new Date())
+    const selectedServiceId = ref(null)
     const slots = ref([])
     const isDayOff = ref(false)
     const dayOffId = ref(null)
@@ -95,7 +96,13 @@ export function useMasterCalendar(props, appointmentQueue, services) {
             }
         
             try {
-                const res = await apiFetch(`/api/masters/${props.user.id}/slots?date=${encodeURIComponent(dateStr)}`)
+                const url = new URL(`/api/masters/${props.user.id}/slots`, window.location.origin)
+                url.searchParams.set('date', dateStr)
+                if (selectedServiceId.value) {
+                    url.searchParams.set('service_id', selectedServiceId.value)
+                }
+
+                const res = await apiFetch(url.toString())
                 if (!res.ok) {
                     throw new Error(`API Error: ${res.status} ${res.statusText}`)
                 }
@@ -159,10 +166,12 @@ export function useMasterCalendar(props, appointmentQueue, services) {
 
     onMounted(fetchSlots)
     watch(selectedDate, fetchSlots)
+    watch(selectedServiceId, fetchSlots)
     watch(() => appointmentQueue.value.length, applyQueueToSlots)
 
     return {
         selectedDate,
+        selectedServiceId,
         slots,
         isDayOff,
         dayOffId,

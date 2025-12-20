@@ -17,7 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -88,7 +88,7 @@ class User extends Authenticatable implements FilamentUser
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'master_services', 'master_id', 'service_id')
-            ->withPivot(['price', 'is_active'])
+            ->withPivot(['price', 'duration_minutes', 'is_active'])
             ->withTimestamps();
     }
 

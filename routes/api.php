@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\ClientController;
-use App\Http\Controllers\Api\TelegramLoginController;
 use App\Http\Controllers\Api\Master\AIController;
 use App\Http\Controllers\Api\Master\AppointmentCancelController;
 use App\Http\Controllers\Api\Master\AppointmentController;
@@ -15,6 +14,7 @@ use App\Http\Controllers\Api\Master\MasterScheduleExceptionController;
 use App\Http\Controllers\Api\Master\MasterSearchController;
 use App\Http\Controllers\Api\Master\MasterSlotController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\TelegramLoginController;
 use App\Http\Middleware\CheckMasterTrialStatus;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +37,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::put('/clients/{client}', [ClientController::class, 'update'])->whereNumber('client');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->whereNumber('client');
     Route::get('/appointments/at', [AppointmentController::class, 'showAt']);
-    
+
     Route::post('/master/schedule-exceptions', [MasterScheduleExceptionController::class, 'store']);
     Route::put('/master/schedule-exceptions/{exception}', [MasterScheduleExceptionController::class, 'update'])->whereNumber('exception');
     Route::patch('/master/schedule-exceptions/{exception}', [MasterScheduleExceptionController::class, 'update'])->whereNumber('exception');

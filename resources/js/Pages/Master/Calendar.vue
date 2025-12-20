@@ -11,7 +11,7 @@
     <div class="mb-6">
       <VueDatePicker
         v-model="selectedDate"
-         class="booking-picker"
+        class="booking-picker"
         :enable-time="false"
         :time-config="{ enableTimePicker: false }"
         :inline="true"
@@ -25,6 +25,19 @@
         :week-start="1"
         :format="'yyyy-MM-dd'"
       />
+    </div>
+    
+    <div class="mb-4">
+       <Select 
+           v-model="selectedServiceId" 
+           :options="services" 
+           optionLabel="name" 
+           optionValue="id" 
+           showClear
+           placeholder="Выберите услугу для проверки слотов" 
+           class="w-full"
+       />
+       <small class="text-gray-500 px-1">Фильтр: выберите услугу, чтобы показать слоты, куда она помещается.</small>
     </div>
     
     <Button 
@@ -76,16 +89,17 @@
                     Нет слотов на выбранную дату. <br>
                     <small>Проверьте настройки графика.</small>
                 </div>
-                <div v-else class="grid grid-cols-2 gap-3">
+                <div v-else class="grid grid-cols-3 gap-3">
                     <div
                         v-for="s in slots"
                         :key="s.starts_at"
-                        class="border rounded-lg p-3 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md"
+                        class="border rounded-lg p-2 text-center cursor-pointer transition-all hover:shadow-md flex flex-col justify-center min-h-[60px]"
                         :class="[
                             s.is_past && s.available ? 'opacity-60 bg-gray-50 cursor-default' : 'bg-white border-gray-200',
                             !s.available && !s.is_past ? 'border-l-4 border-l-red-500' : '',
                             s.available && !s.is_past ? 'border-l-4 border-l-green-500' : '',
-                            s.is_offline_pending ? '!border-l-yellow-500 bg-yellow-50 !opacity-90 border-dashed' : ''
+                            s.is_offline_pending ? '!border-l-yellow-500 bg-yellow-50 !opacity-90 border-dashed' : '',
+                            s.appointment ? 'bg-blue-50 border-blue-200' : ''
                         ]"
                         @click="handleClick(s)"
                     >
@@ -93,8 +107,12 @@
                             {{ s.time }}
                             <i v-if="s.is_offline_pending" class="pi pi-cloud-upload text-yellow-600" title="Ожидает синхронизации"></i>
                         </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <template v-if="s.is_past">
+                        <div class="flex flex-col text-sm text-left">
+                            <template v-if="s.appointment">
+                                <span class="font-bold text-blue-800 truncate">{{ s.appointment.client?.name }}</span>
+                                <span class="text-xs text-blue-600 truncate">{{ s.appointment.service?.name }}</span>
+                            </template>
+                            <template v-else-if="s.is_past">
                                 <span v-if="s.available" class="text-gray-400">Прошел</span>
                                 <span v-else class="text-red-600 font-medium">Занят</span>
                             </template>
@@ -142,6 +160,7 @@
                             optionValue="id" 
                             placeholder="Выберите услугу" 
                             class="w-full !p-2"
+                            :disabled="!!selectedServiceId"
                         />
                     </div>
 
@@ -305,7 +324,7 @@ const { isOnline, queue: appointmentQueue, addToQueue } = useOfflineQueue('offli
 
 // 2. Calendar Logic
 const {
-    selectedDate, slots, isDayOff, dayOffId, loading, isCachedData,
+    selectedDate, selectedServiceId, slots, isDayOff, dayOffId, loading, isCachedData,
     formatDateLocal, fetchSlots, makeDayOff, cancelDayOff, apiFetch
 } = useMasterCalendar(props, appointmentQueue, services)
 
@@ -359,6 +378,9 @@ function handleClick(slot) {
   }
   if (slot.available) {
     openCreateModalFn(slot, formatDateLocal(selectedDate.value), services.value, fetchServicesAndClients)
+    if (selectedServiceId.value) {
+        form.value.service_id = selectedServiceId.value
+    }
   } else {
     openInfoModal(slot)
   }
@@ -427,6 +449,10 @@ async function notifyClient() {
     if (url) try { window.open(url, '_blank') } catch (e) { window.location.href = url }
   }
 }
+
+onMounted(() => {
+    fetchServicesAndClients()
+})
 
 async function cancelAppointment() {
   if (!info.value.id) return

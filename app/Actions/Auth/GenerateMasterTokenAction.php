@@ -57,4 +57,3 @@ class GenerateMasterTokenAction
         return $user->createToken('universal-master-token')->plainTextToken;
     }
 }
-

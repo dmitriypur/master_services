@@ -28,8 +28,12 @@ class AppointmentStoreTest extends TestCase
 
         $this->actingAs($master);
 
-        $this->app->instance(SlotService::class, new class extends SlotService {
-            public function isFree($master, $startsAt, $endsAt): bool { return true; }
+        $this->app->instance(SlotService::class, new class extends SlotService
+        {
+            public function isFree($master, $startsAt, $endsAt): bool
+            {
+                return true;
+            }
         });
 
         $payload = [
@@ -46,7 +50,7 @@ class AppointmentStoreTest extends TestCase
         $response->assertCreated()
             ->assertJsonStructure([
                 'data' => [
-                    'id', 'master_id', 'client_id', 'service_id', 'starts_at', 'ends_at', 'status', 'source'
+                    'id', 'master_id', 'client_id', 'service_id', 'starts_at', 'ends_at', 'status', 'source',
                 ],
             ])
             ->assertJsonPath('data.master_id', $master->id)

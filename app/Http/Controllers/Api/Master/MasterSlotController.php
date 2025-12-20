@@ -20,8 +20,9 @@ class MasterSlotController extends Controller
 
         $dateParam = (string) $request->query('date', Carbon::now()->toDateString());
         $date = Carbon::parse($dateParam);
+        $serviceId = $request->query('service_id') ? (int) $request->query('service_id') : null;
 
-        $result = $slots->getSlotsForDate($user, $date);
+        $result = $slots->getSlotsForDate($user, $date, $serviceId);
 
         return response()->json([
             'data' => SlotResource::collection($result['slots'] ?? $result),

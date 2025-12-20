@@ -17,6 +17,7 @@ class ServiceResource extends JsonResource
                 $this->pivot !== null,
                 fn () => [
                     'price' => $this->pivot->price,
+                    'duration_minutes' => $this->pivot->duration_minutes,
                     'is_active' => (bool) $this->pivot->is_active,
                 ]
             ),

@@ -25,9 +25,12 @@ class UpdateSettingsRequest extends FormRequest
             'work_days.*' => ['integer', 'min:1', 'max:7'],
             'work_time_from' => ['required', 'date_format:H:i', 'before:work_time_to'],
             'work_time_to' => ['required', 'date_format:H:i', 'after:work_time_from'],
-            'slot_duration_min' => ['required', 'integer', Rule::in([15, 30, 60])],
+            'slot_duration_min' => ['nullable', 'integer', 'min:5', 'max:60'],
             'services' => ['required', 'array', 'min:1'],
-            'services.*' => ['integer', Rule::exists('services', 'id')],
+            'services.*' => ['array'],
+            'services.*.id' => ['required', 'integer', Rule::exists('services', 'id')],
+            'services.*.price' => ['nullable', 'integer', 'min:0'],
+            'services.*.duration' => ['required', 'integer', 'min:1', 'max:1440'],
         ];
     }
 
@@ -53,14 +56,19 @@ class UpdateSettingsRequest extends FormRequest
             'work_time_to.required' => 'Укажите время окончания',
             'work_time_to.date_format' => 'Неверный формат времени окончания',
             'work_time_to.after' => 'Время окончания должно быть позже времени начала',
-            'slot_duration_min.required' => 'Укажите длительность слота',
-            'slot_duration_min.integer' => 'Длительность слота должна быть числом',
-            'slot_duration_min.in' => 'Допустимые значения: 15, 30, 60 минут',
             'services.required' => 'Выберите хотя бы одну услугу',
             'services.min' => 'Выберите хотя бы одну услугу',
             'services.array' => 'Список услуг в неверном формате',
-            'services.*.integer' => 'Неверная услуга',
-            'services.*.exists' => 'Некоторая услуга не найдена',
+            'services.*.array' => 'Некоторая услуга в неверном формате',
+            'services.*.id.required' => 'Некоторая услуга не выбрана',
+            'services.*.id.integer' => 'Некоторая услуга в неверном формате',
+            'services.*.id.exists' => 'Некоторая услуга не найдена',
+            'services.*.price.integer' => 'Цена должна быть числом',
+            'services.*.price.min' => 'Цена не может быть отрицательной',
+            'services.*.duration.required' => 'Укажите длительность услуги',
+            'services.*.duration.integer' => 'Длительность должна быть числом',
+            'services.*.duration.min' => 'Длительность должна быть больше 0',
+            'services.*.duration.max' => 'Длительность слишком большая',
             'phone.required' => 'Укажите номер телефона',
             'phone.regex' => 'Телефон: только цифры, 5–11',
         ];
@@ -74,7 +82,7 @@ class UpdateSettingsRequest extends FormRequest
 
         if (is_array($days)) {
             // Фильтруем массив от null и пустых значений, затем приводим к int
-            $cleanDays = array_filter($days, fn($v) => !is_null($v) && $v !== '');
+            $cleanDays = array_filter($days, fn ($v) => ! is_null($v) && $v !== '');
             $this->merge([
                 'work_days' => array_map('intval', array_values($cleanDays)),
             ]);
@@ -82,9 +90,27 @@ class UpdateSettingsRequest extends FormRequest
 
         $services = $this->input('services');
         if (is_array($services)) {
-            $cleanServices = array_filter($services, fn($v) => !is_null($v) && $v !== '');
+            $normalized = [];
+            foreach ($services as $row) {
+                if (is_array($row)) {
+                    if (! array_key_exists('id', $row)) {
+                        continue;
+                    }
+                    $normalized[] = [
+                        'id' => (int) $row['id'],
+                        'price' => array_key_exists('price', $row) && $row['price'] !== null ? (int) $row['price'] : null,
+                        'duration' => array_key_exists('duration', $row) && $row['duration'] !== null ? (int) $row['duration'] : null,
+                    ];
+                } elseif (is_numeric($row)) {
+                    $normalized[] = [
+                        'id' => (int) $row,
+                        'price' => null,
+                        'duration' => null,
+                    ];
+                }
+            }
             $this->merge([
-                'services' => array_map('intval', array_values($cleanServices)),
+                'services' => $normalized,
             ]);
         }
 

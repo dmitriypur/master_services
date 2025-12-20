@@ -117,4 +117,3 @@ class MasterScheduleExceptionResource extends Resource
         return auth()->user()?->isSuperAdmin() ?? false;
     }
 }
-

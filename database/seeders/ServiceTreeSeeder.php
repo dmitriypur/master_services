@@ -15,14 +15,14 @@ class ServiceTreeSeeder extends Seeder
     {
         // Отключаем проверку внешних ключей для очистки
         Schema::disableForeignKeyConstraints();
-        
+
         DB::table('services')->truncate();
-        
+
         Schema::enableForeignKeyConstraints();
-        
+
         // Сбрасываем автоинкремент (для PostgreSQL)
         if (DB::getDriverName() === 'pgsql') {
-             DB::statement('ALTER SEQUENCE services_id_seq RESTART WITH 1');
+            DB::statement('ALTER SEQUENCE services_id_seq RESTART WITH 1');
         }
 
         $tree = [
@@ -35,7 +35,7 @@ class ServiceTreeSeeder extends Seeder
                             'Комбинированный маникюр',
                             'Мужской маникюр',
                             'Японский маникюр',
-                        ]
+                        ],
                     ],
                     'Педикюр' => [
                         'children' => [
@@ -43,7 +43,7 @@ class ServiceTreeSeeder extends Seeder
                             'Аппаратный педикюр',
                             'Кислотный педикюр',
                             'Смарт-педикюр',
-                        ]
+                        ],
                     ],
                     'Покрытие и дизайн' => [
                         'children' => [
@@ -51,7 +51,7 @@ class ServiceTreeSeeder extends Seeder
                             'Выравнивание пластины',
                             'Френч',
                             'Художественная роспись',
-                        ]
+                        ],
                     ],
                     'Наращивание ногтей' => [
                         'children' => [
@@ -59,15 +59,15 @@ class ServiceTreeSeeder extends Seeder
                             'Наращивание акрилом',
                             'Полигель',
                             'Коррекция',
-                        ]
+                        ],
                     ],
                     'Уход' => [
                         'children' => [
                             'Парафинотерапия',
                             'SPA-уход для рук/ног',
-                        ]
+                        ],
                     ],
-                ]
+                ],
             ],
             'Парикмахерские услуги' => [
                 'children' => [
@@ -78,7 +78,7 @@ class ServiceTreeSeeder extends Seeder
                             'Детская стрижка',
                             'Стрижка челки',
                             'Подравнивание кончиков',
-                        ]
+                        ],
                     ],
                     'Окрашивание' => [
                         'children' => [
@@ -87,7 +87,7 @@ class ServiceTreeSeeder extends Seeder
                             'Мелирование',
                             'Тонирование',
                             'Сложное окрашивание (AirTouch, Шатуш)',
-                        ]
+                        ],
                     ],
                     'Укладки и прически' => [
                         'children' => [
@@ -95,7 +95,7 @@ class ServiceTreeSeeder extends Seeder
                             'Свадебная прическа',
                             'Локоны',
                             'Плетение кос',
-                        ]
+                        ],
                     ],
                     'Уход и восстановление' => [
                         'children' => [
@@ -103,15 +103,15 @@ class ServiceTreeSeeder extends Seeder
                             'Кератиновое выпрямление',
                             'Нанопластика',
                             'Ламинирование',
-                        ]
+                        ],
                     ],
                     'Наращивание волос' => [
                         'children' => [
-                             'Капсульное наращивание',
-                             'Ленточное наращивание',
-                        ]
-                    ]
-                ]
+                            'Капсульное наращивание',
+                            'Ленточное наращивание',
+                        ],
+                    ],
+                ],
             ],
             'Брови и ресницы' => [
                 'children' => [
@@ -120,7 +120,7 @@ class ServiceTreeSeeder extends Seeder
                             'Коррекция бровей',
                             'Окрашивание бровей',
                             'Долговременная укладка бровей',
-                        ]
+                        ],
                     ],
                     'Ресницы' => [
                         'children' => [
@@ -130,9 +130,9 @@ class ServiceTreeSeeder extends Seeder
                             'Ламинирование ресниц',
                             'Окрашивание ресниц',
                             'Снятие ресниц',
-                        ]
+                        ],
                     ],
-                ]
+                ],
             ],
             'Косметология и Эпиляция' => [
                 'children' => [
@@ -142,30 +142,30 @@ class ServiceTreeSeeder extends Seeder
                             'Шугаринг',
                             'Восковая эпиляция',
                             'Электроэпиляция',
-                        ]
+                        ],
                     ],
                     'Уход за лицом' => [
                         'children' => [
                             'Чистка лица',
                             'Пилинг',
                             'Массаж лица',
-                        ]
+                        ],
                     ],
                     'Инъекционная косметология' => [
                         'children' => [
                             'Мезотерапия',
                             'Биоревитализация',
                             'Контурная пластика губ',
-                        ]
+                        ],
                     ],
                     'Перманентный макияж' => [
                         'children' => [
                             'Пудровое напыление бровей',
                             'Межресничка',
                             'Перманент губ',
-                        ]
+                        ],
                     ],
-                ]
+                ],
             ],
             'Макияж' => [
                 'children' => [
@@ -173,7 +173,7 @@ class ServiceTreeSeeder extends Seeder
                     'Вечерний макияж',
                     'Свадебный макияж',
                     'Лифтинг-макияж',
-                ]
+                ],
             ],
             'Массаж и SPA' => [
                 'children' => [
@@ -182,7 +182,7 @@ class ServiceTreeSeeder extends Seeder
                     'Лимфодренажный массаж',
                     'Антицеллюлитный массаж',
                     'Расслабляющий массаж',
-                ]
+                ],
             ],
         ];
 
@@ -198,7 +198,7 @@ class ServiceTreeSeeder extends Seeder
                     'name' => $key,
                     'parent_id' => $parent ? $parent->id : -1,
                 ]);
-                
+
                 // Рекурсивно создаем детей
                 $this->createNodes($value['children'], $node);
             } else {

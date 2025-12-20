@@ -13,7 +13,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 class UserResource extends Resource
 {
@@ -149,6 +148,7 @@ class UserResource extends Resource
                                                 if (! $categoryId) {
                                                     return [];
                                                 }
+
                                                 return Service::where('parent_id', $categoryId)->pluck('name', 'id');
                                             })
                                             ->live()
@@ -166,19 +166,19 @@ class UserResource extends Resource
                                                 if ($subcategoryId) {
                                                     return Service::where('parent_id', $subcategoryId)->pluck('name', 'id');
                                                 }
-                                                
+
                                                 // Если подкатегории нет, но выбрана категория (и у неё нет подкатегорий, а сразу услуги)
                                                 // Такое возможно, если структура неглубокая.
                                                 // Но в нашем сидере везде 3 уровня.
                                                 // На всякий случай оставим логику:
                                                 $categoryId = $get('category_id');
                                                 if ($categoryId) {
-                                                     // Если нет подкатегорий, показываем услуги категории
-                                                     // Но мы выше скрываем subcategory_id только если count() == 0.
-                                                     // Значит здесь просто возвращаем пустой массив, пока не выбрана подкатегория.
-                                                     return [];
+                                                    // Если нет подкатегорий, показываем услуги категории
+                                                    // Но мы выше скрываем subcategory_id только если count() == 0.
+                                                    // Значит здесь просто возвращаем пустой массив, пока не выбрана подкатегория.
+                                                    return [];
                                                 }
-                                                
+
                                                 return [];
                                             })
                                             ->required()
@@ -194,20 +194,24 @@ class UserResource extends Resource
                             ->dehydrated(false) // Не отправлять в модель User напрямую
                             ->afterStateHydrated(function (Forms\Components\Repeater $component, ?User $record) {
                                 // Загрузка данных при открытии формы
-                                if (! $record) return;
-                                
+                                if (! $record) {
+                                    return;
+                                }
+
                                 $services = $record->services()->with('parent.parent')->get();
                                 $data = [];
-                                
+
                                 foreach ($services as $service) {
                                     // Пытаемся восстановить иерархию снизу вверх
                                     // service -> parent (subcategory) -> parent (category)
-                                    
+
                                     $subcategory = $service->parent;
                                     $category = $subcategory?->parent;
-                                    
+
                                     // Если структура нарушена или это корневая услуга (чего быть не должно по логике)
-                                    if (!$subcategory || !$category) continue;
+                                    if (! $subcategory || ! $category) {
+                                        continue;
+                                    }
 
                                     $data[] = [
                                         'category_id' => $category->id,
@@ -215,20 +219,20 @@ class UserResource extends Resource
                                         'service_id' => $service->id,
                                     ];
                                 }
-                                
+
                                 $component->state($data);
                             })
                             ->saveRelationshipsUsing(function (User $record, $state) {
                                 // Сохранение данных
                                 // $state - массив из репитера
                                 // Нам нужны только service_id
-                                
+
                                 $serviceIds = collect($state)
                                     ->pluck('service_id')
                                     ->filter()
                                     ->unique()
                                     ->toArray();
-                                    
+
                                 $record->services()->sync($serviceIds);
                             }),
                     ]),

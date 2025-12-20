@@ -23,7 +23,7 @@ class WebhookController extends Controller
         if ($chatId !== 0 && $text === '/start') {
             $base = rtrim((string) config('app.url'), '/');
             $masterUrl = $base.'/app?webview=1';
-            
+
             $bot->sendMessage($chatId, 'Добро пожаловать! Нажмите кнопку ниже, чтобы войти.', [
                 'reply_markup' => [
                     'inline_keyboard' => [

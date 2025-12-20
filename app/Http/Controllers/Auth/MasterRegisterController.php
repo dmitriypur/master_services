@@ -20,19 +20,19 @@ class MasterRegisterController extends Controller
         $payload = $request->validated();
         $initData = (string) ($request->input('initData') ?? '');
         $telegramUser = $request->input('telegram_user'); // Данные от виджета
-        
+
         $userData = [];
         $isWidgetAuth = false;
 
         if ($initData !== '') {
-             // Авторизация через WebApp (внутри Telegram)
-             $userData = $service->validateInitData($initData);
-        } elseif (!empty($telegramUser) && is_array($telegramUser)) {
-             // Авторизация через Виджет (на сайте)
-             $userData = $service->validateLoginWidget($telegramUser);
-             $isWidgetAuth = true;
+            // Авторизация через WebApp (внутри Telegram)
+            $userData = $service->validateInitData($initData);
+        } elseif (! empty($telegramUser) && is_array($telegramUser)) {
+            // Авторизация через Виджет (на сайте)
+            $userData = $service->validateLoginWidget($telegramUser);
+            $isWidgetAuth = true;
         }
-        
+
         // Если пытались через ТГ, но валидация не прошла
         if (($initData !== '' || $isWidgetAuth) && empty($userData['id'])) {
             return response()->json(['message' => 'Неверные данные Telegram'], 422);
@@ -45,20 +45,21 @@ class MasterRegisterController extends Controller
 
         // Проверка на существование (по telegram_id)
         if (! empty($userData['id'])) {
-             $existing = User::query()
+            $existing = User::query()
                 ->where('telegram_id', $userData['id'])
                 ->where('role', 'master')
                 ->first();
-             
-             if ($existing) {
+
+            if ($existing) {
                 Auth::login($existing, true);
+
                 return response()->json([
                     'message' => 'Уже зарегистрированы',
                     'redirect' => url('/master/settings'),
                 ]);
-             }
+            }
         }
-        
+
         // Обработка телефона
         $phone = null;
         if (! empty($payload['phone']) && is_string($payload['phone'])) {
@@ -67,9 +68,9 @@ class MasterRegisterController extends Controller
                 $phone = $digits;
             }
         }
-        
+
         if ($phone && User::query()->where('phone', $phone)->exists()) {
-             return response()->json(['message' => 'Пользователь с таким телефоном уже существует'], 422);
+            return response()->json(['message' => 'Пользователь с таким телефоном уже существует'], 422);
         }
 
         $email = ! empty($userData['id']) ? 'tg_'.$userData['id'].'@local' : 'phone_'.$phone.'@local';
@@ -82,7 +83,7 @@ class MasterRegisterController extends Controller
             'password' => $password, // Будет хешироваться автоматически через casts
             'role' => 'master',
             'telegram_id' => $telegramId,
-            'city_id' => !empty($payload['city_id']) ? (int) $payload['city_id'] : null,
+            'city_id' => ! empty($payload['city_id']) ? (int) $payload['city_id'] : null,
             'phone' => $phone,
             'subscription_status' => 'trial',
             'is_active' => true,
@@ -94,7 +95,7 @@ class MasterRegisterController extends Controller
             'work_days' => $payload['work_days'] ?? [],
             'work_time_from' => $payload['work_time_from'] ?? '09:00',
             'work_time_to' => $payload['work_time_to'] ?? '18:00',
-            'slot_duration_min' => $payload['slot_duration_min'] ?? 60,
+            'slot_duration_min' => $payload['slot_duration_min'] ?? 15,
         ]);
 
         $serviceIds = array_map('intval', (array) ($payload['services'] ?? []));

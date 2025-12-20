@@ -42,11 +42,13 @@ class CreateAppointmentAction
         }
 
         $serviceId = (int) $data['service_id'];
-        $hasService = $master->services()
+        $service = $master->services()
             ->wherePivot('is_active', true)
             ->where('services.id', $serviceId)
-            ->exists();
-        if (! $hasService) {
+            ->withPivot('duration_minutes')
+            ->first();
+
+        if (! $service) {
             throw ValidationException::withMessages([
                 'service_id' => ['Услуга недоступна для мастера'],
             ]);
@@ -106,11 +108,9 @@ class CreateAppointmentAction
         $tz = config('app.timezone');
         $startsAt = Carbon::parse(((string) $data['date']).' '.((string) $data['time']), $tz);
 
-        $duration = (int) ($master->masterSettings?->slot_duration_min ?? 0);
+        $duration = (int) ($service->pivot->duration_minutes ?? 60);
         if ($duration <= 0) {
-            throw ValidationException::withMessages([
-                'time' => ['Неверная конфигурация слотов мастера'],
-            ]);
+            $duration = 60;
         }
 
         $endsAt = $startsAt->copy()->addMinutes($duration);

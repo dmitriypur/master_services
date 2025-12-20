@@ -24,7 +24,7 @@ class MasterScheduleExceptionController extends Controller
                 ->where('date', $data['date'])
                 ->where('type', 'day_off')
                 ->exists();
-            
+
             if ($exists) {
                 return response()->json(['message' => 'Уже установлен выходной'], 422);
             }

@@ -9,4 +9,3 @@ class CreateMasterScheduleException extends CreateRecord
 {
     protected static string $resource = MasterScheduleExceptionResource::class;
 }
-

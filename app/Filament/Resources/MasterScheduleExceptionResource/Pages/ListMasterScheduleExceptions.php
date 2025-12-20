@@ -18,4 +18,3 @@ class ListMasterScheduleExceptions extends ListRecords
         ];
     }
 }
-

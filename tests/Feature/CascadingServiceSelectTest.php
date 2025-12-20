@@ -54,7 +54,7 @@ class CascadingServiceSelectTest extends TestCase
         $orphan = Service::create(['name' => 'Orphan', 'parent_id' => -1]);
 
         $response = $this->postJson('/api/services/resolve-chain', [
-            'ids' => [$service->id, $orphan->id]
+            'ids' => [$service->id, $orphan->id],
         ]);
 
         $response->assertOk()
@@ -76,18 +76,18 @@ class CascadingServiceSelectTest extends TestCase
 
         // Эмулируем сохранение настроек
         // В Settings.vue: form.put('/master/settings')
-        // Но у нас нет отдельного роута /master/settings в api.php, 
+        // Но у нас нет отдельного роута /master/settings в api.php,
         // вероятно это Web роут или в контроллере User/MasterController.
         // Проверим web.php или контроллеры.
-        
+
         // В предыдущих шагах я видел, что Settings.vue отправляет PUT /master/settings
         // Нужно найти этот контроллер.
-        
-        // Пока проверим базовое сохранение через отношение (Unit-style), 
+
+        // Пока проверим базовое сохранение через отношение (Unit-style),
         // если не найдем роут быстро.
-        
+
         $master->services()->sync([$service1->id, $service2->id]);
-        
+
         $this->assertCount(2, $master->services);
         $this->assertTrue($master->services->contains($service1));
         $this->assertTrue($master->services->contains($service2));

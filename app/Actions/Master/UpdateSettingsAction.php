@@ -40,10 +40,26 @@ class UpdateSettingsAction
             );
 
             if (array_key_exists('services', $data) && is_array($data['services'])) {
-                $serviceIds = array_map('intval', $data['services']);
                 $syncData = [];
-                foreach ($serviceIds as $id) {
-                    $syncData[$id] = ['is_active' => true];
+                foreach ($data['services'] as $row) {
+                    if (! is_array($row) || ! array_key_exists('id', $row)) {
+                        continue;
+                    }
+
+                    $serviceId = (int) $row['id'];
+                    if ($serviceId <= 0) {
+                        continue;
+                    }
+
+                    $price = array_key_exists('price', $row) && $row['price'] !== null ? (int) $row['price'] : null;
+                    $durationMinutes = array_key_exists('duration', $row) && $row['duration'] !== null ? (int) $row['duration'] : 60;
+                    $durationMinutes = max($durationMinutes, 1);
+
+                    $syncData[$serviceId] = [
+                        'is_active' => true,
+                        'price' => $price,
+                        'duration_minutes' => $durationMinutes,
+                    ];
                 }
                 $user->services()->sync($syncData);
             }
@@ -56,9 +72,9 @@ class UpdateSettingsAction
                 $user->profile_completed_at = now();
                 $user->save();
             } elseif ($user->is_active && ! $hasServices) {
-                 // Если мастер удалил все услуги, деактивируем его
-                 $user->is_active = false;
-                 $user->save();
+                // Если мастер удалил все услуги, деактивируем его
+                $user->is_active = false;
+                $user->save();
             }
         });
 
