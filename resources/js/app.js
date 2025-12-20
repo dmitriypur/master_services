@@ -6,12 +6,46 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import 'primeicons/primeicons.css'
 
+// Helper to prime cache
+const primeCache = async () => {
+    try {
+        // 1. Fetch current page (HTML) to force SW to cache it
+        await fetch(window.location.href);
+        
+        // 2. Fetch all scripts and styles currently in DOM
+        const assets = [
+            ...Array.from(document.scripts).map(s => s.src).filter(src => src && !src.includes('chrome-extension') && !src.startsWith('blob:')),
+            ...Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.href)
+        ];
+
+        // Unique URLs
+        const uniqueAssets = [...new Set(assets)];
+
+        // Fetch them (SW will intercept and cache)
+        uniqueAssets.forEach(url => fetch(url));
+        
+        console.log('Cache priming initiated for', uniqueAssets.length, 'assets');
+    } catch (e) {
+        console.error('Cache priming failed', e);
+    }
+};
+
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('SW registered: ', registration.scope)
+        console.log('SW registered: ', registration.scope);
+        
+        // Check if controller is active, if so, prime cache immediately
+        if (navigator.serviceWorker.controller) {
+            primeCache();
+        } else {
+            // Wait for controller change (first install)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                primeCache();
+            });
+        }
       })
       .catch((registrationError) => {
         console.log('SW registration failed: ', registrationError)

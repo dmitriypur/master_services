@@ -1,5 +1,5 @@
-const CACHE_NAME = 'master-calendar-v4';
-const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v4';
+const CACHE_NAME = 'master-calendar-v5';
+const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v5';
 
 // Install event: Skip waiting to activate immediately
 self.addEventListener('install', (event) => {
