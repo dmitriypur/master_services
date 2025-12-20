@@ -1,5 +1,5 @@
-const CACHE_NAME = 'master-calendar-v5';
-const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v5';
+const CACHE_NAME = 'master-calendar-v6';
+const DYNAMIC_CACHE_NAME = 'master-calendar-dynamic-v6';
 
 // Install event: Skip waiting to activate immediately
 self.addEventListener('install', (event) => {
@@ -38,8 +38,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // HTML / Navigation Requests: Network First, falling back to Cache
-    if (event.request.mode === 'navigate') {
+    const isHTML = event.request.mode === 'navigate' || 
+                   (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
+
+    // HTML / Navigation Requests (and manual HTML fetches): Network First, falling back to Cache
+    if (isHTML) {
         event.respondWith(
             fetch(event.request)
                 .then((networkResponse) => {
